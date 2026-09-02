@@ -243,11 +243,10 @@ input::placeholder { color: var(--text-dim); }
 .tabbar {
   position: fixed;
   left: max(12px, calc(50% - 203px));
-  right: max(12px, calc(50% - 203px));
+  /* Leaves room for the round search button that sits alongside. */
+  right: calc(max(12px, calc(50% - 203px)) + var(--tabbar-h) + 10px);
   bottom: calc(8px + var(--safe-bottom));
   height: var(--tabbar-h);
-  max-width: 406px;
-  margin: 0 auto;
   padding: 6px;
   display: flex;
   align-items: stretch;
@@ -277,6 +276,23 @@ input::placeholder { color: var(--text-dim); }
 }
 .tab-btn.active { color: var(--accent); }
 .tab-icon { font-size: 20px; }
+
+/* Search sits outside the tab bar as its own round button. It had no styling
+   at all, so it was collapsing to intrinsic size in the bottom-left corner. */
+.search-fab {
+  position: fixed;
+  right: max(12px, calc(50% - 203px));
+  bottom: calc(8px + var(--safe-bottom));
+  width: var(--tabbar-h);
+  height: var(--tabbar-h);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-dim);
+  z-index: 10;
+  transition: color 0.2s, transform 0.18s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.search-fab.active { color: var(--accent); }
+.search-fab:active { transform: scale(0.9); }
 
 .now-playing {
   position: fixed; inset: 0; z-index: 50;
