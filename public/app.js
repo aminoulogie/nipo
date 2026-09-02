@@ -255,13 +255,24 @@
     }
   }
 
+  // Keep a slider's filled portion in step with its value.
+  function paintSlider(input) {
+    const min = Number(input.min || 0);
+    const max = Number(input.max || 100);
+    const pct = max > min ? ((input.value - min) / (max - min)) * 100 : 0;
+    input.style.setProperty('--pct', pct + '%');
+  }
+
   audio.addEventListener('play', () => Player.updatePlayIcons());
   audio.addEventListener('pause', () => Player.updatePlayIcons());
   audio.addEventListener('ended', () => Player.next());
   audio.addEventListener('timeupdate', () => {
     const dur = audio.duration;
     const seek = document.getElementById('np-seek');
-    if (dur && !seek.dataset.dragging) seek.value = Math.round((audio.currentTime / dur) * 1000);
+    if (dur && !seek.dataset.dragging) {
+      seek.value = Math.round((audio.currentTime / dur) * 1000);
+      paintSlider(seek);
+    }
     document.getElementById('np-time-cur').textContent = fmtTime(audio.currentTime);
     document.getElementById('np-time-rem').textContent =
       dur ? '-' + fmtTime(dur - audio.currentTime) : '-0:00';
@@ -584,11 +595,16 @@
   ['pointerup', 'touchend', 'change'].forEach((ev) =>
     seekEl.addEventListener(ev, () => { delete seekEl.dataset.dragging; }));
   seekEl.addEventListener('input', (e) => {
+    paintSlider(e.target);
     if (audio.duration) audio.currentTime = (e.target.value / 1000) * audio.duration;
   });
 
   const volEl = document.getElementById('np-vol');
-  volEl.addEventListener('input', (e) => { audio.volume = e.target.value / 100; });
+  volEl.addEventListener('input', (e) => {
+    paintSlider(e.target);
+    audio.volume = e.target.value / 100;
+  });
+  paintSlider(volEl);
 
   // ---------- Login ----------
   function showApp() {

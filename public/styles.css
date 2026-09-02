@@ -249,21 +249,31 @@ input::placeholder { color: var(--text-dim); }
 
 /* Progress + volume sliders */
 .np-slider { width: 100%; }
+/* --pct is kept in sync from JS so the elapsed portion reads brighter, the
+   way Apple Music fills its scrubber. */
 .np-slider input[type=range] {
   width: 100%; -webkit-appearance: none; appearance: none;
   height: 7px; border-radius: 4px; padding: 0;
-  background: rgba(255, 255, 255, 0.22);
+  --pct: 0%;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0.62) var(--pct),
+    rgba(255, 255, 255, 0.2) var(--pct)
+  );
 }
 .np-slider input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none; width: 8px; height: 8px; border-radius: 50%;
   background: transparent;
 }
+.np-slider input[type=range]::-moz-range-thumb {
+  width: 8px; height: 8px; border: none; border-radius: 50%; background: transparent;
+}
 .np-progress { margin-top: 20px; }
 .np-times { display: flex; justify-content: space-between; font-size: 12px; color: rgba(255, 255, 255, 0.45); margin-top: 7px; font-variant-numeric: tabular-nums; }
 
 .np-controls { display: flex; align-items: center; justify-content: center; gap: 58px; margin-top: 14px; }
-.np-ctrl-btn { font-size: 32px; line-height: 1; color: var(--text); }
-.np-play { font-size: 42px; }
+.np-ctrl-btn { font-size: 32px; line-height: 1; color: var(--text); letter-spacing: -5px; }
+.np-play { font-size: 42px; letter-spacing: normal; }
 
 .np-volume { display: flex; align-items: center; gap: 11px; width: 100%; margin-top: 22px; }
 .np-volume .vol-icon { font-size: 12px; color: rgba(255, 255, 255, 0.45); flex-shrink: 0; }
