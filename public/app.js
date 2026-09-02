@@ -585,40 +585,69 @@
   // Swipe down to dismiss. The sheet tracks the finger 1:1, resists upward
   // drags, and flicks away on either distance or velocity so a short fast
   // swipe closes it just like a slow long one.
+  // Touch events rather than Pointer events: iOS Safari cancels pointer
+  // sequences unpredictably in standalone (home-screen) mode, which killed the
+  // gesture mid-swipe. Mouse handlers cover the desktop case separately.
   let dragFrom = null, dragLastY = 0, dragLastT = 0, dragVel = 0;
-  npSheet.addEventListener('pointerdown', (e) => {
+
+  function dragStart(y, target) {
     // Controls and the scrollable queue keep their own gestures.
-    if (e.target.closest('button, input[type=range], .np-queue')) return;
-    dragFrom = e.clientY;
-    dragLastY = e.clientY;
-    dragLastT = e.timeStamp;
+    if (target && target.closest && target.closest('button, input[type=range], .np-queue')) return;
+    dragFrom = y;
+    dragLastY = y;
+    dragLastT = performance.now();
     dragVel = 0;
     npSheet.classList.add('dragging');
-    npSheet.setPointerCapture(e.pointerId);
-  });
-  npSheet.addEventListener('pointermove', (e) => {
+  }
+  function dragMove(y) {
     if (dragFrom === null) return;
     // Rubber-band anything above the resting position instead of lifting off.
-    const raw = e.clientY - dragFrom;
+    const raw = y - dragFrom;
     const dy = raw < 0 ? raw / 6 : raw;
-    const dt = e.timeStamp - dragLastT;
+    const now = performance.now();
+    const dt = now - dragLastT;
     if (dt > 0) {
-      dragVel = (e.clientY - dragLastY) / dt; // px per ms
-      dragLastY = e.clientY;
-      dragLastT = e.timeStamp;
+      dragVel = (y - dragLastY) / dt; // px per ms
+      dragLastY = y;
+      dragLastT = now;
     }
     npSheet.style.transform = `translateY(${dy}px)`;
-  });
-  function endDrag(e) {
+  }
+  function dragEnd(y) {
     if (dragFrom === null) return;
-    const dy = e.clientY - dragFrom;
+    const dy = y - dragFrom;
     dragFrom = null;
     npSheet.classList.remove('dragging');
     npSheet.style.transform = '';
+    // Distance or a quick flick both dismiss.
     if (dy > 110 || dragVel > 0.55) closeNP();
   }
-  npSheet.addEventListener('pointerup', endDrag);
-  npSheet.addEventListener('pointercancel', endDrag);
+  function dragAbort() {
+    if (dragFrom === null) return;
+    dragFrom = null;
+    npSheet.classList.remove('dragging');
+    npSheet.style.transform = '';
+  }
+
+  npSheet.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1) return;
+    dragStart(e.touches[0].clientY, e.target);
+  }, { passive: true });
+  npSheet.addEventListener('touchmove', (e) => {
+    if (dragFrom === null) return;
+    e.preventDefault(); // hold off Safari's rubber-band scroll
+    dragMove(e.touches[0].clientY);
+  }, { passive: false });
+  npSheet.addEventListener('touchend', (e) => {
+    if (dragFrom === null) return;
+    dragEnd(e.changedTouches[0].clientY);
+  });
+  npSheet.addEventListener('touchcancel', dragAbort);
+
+  // Desktop: same gesture with a mouse, so it is testable outside a phone.
+  npSheet.addEventListener('mousedown', (e) => dragStart(e.clientY, e.target));
+  window.addEventListener('mousemove', (e) => dragMove(e.clientY));
+  window.addEventListener('mouseup', (e) => dragEnd(e.clientY));
 
   document.getElementById('mini-playpause').addEventListener('click', () => Player.toggle());
   document.getElementById('mini-next').addEventListener('click', () => Player.next());
