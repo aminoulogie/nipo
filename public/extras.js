@@ -292,6 +292,38 @@
   if (overlay) overlay.addEventListener('click', closeSheets);
 
   window.NipoOpenSongSheet = openSongSheet;
+
+  // Menu for a whole album or playlist, opened from a detail header's "...".
+  window.NipoOpenListSheet = function openListSheet(ctx) {
+    if (!actionSheet || !actionBody) return;
+    actionBody.innerHTML = '';
+    const add = (label, ic, fn) => {
+      const b = el('button', 'sheet-item');
+      b.innerHTML = `${icon(ic)} ${esc(label)}`;
+      b.addEventListener('click', async () => { closeSheets(); await fn(); });
+      actionBody.appendChild(b);
+    };
+    const P = window.NipoPlayer;
+    add('Play', 'play', () => P && P.playQueue(ctx.songs, 0));
+    add('Shuffle', 'shuffle', () => {
+      if (P) P.playQueue(ctx.songs, Math.floor(Math.random() * ctx.songs.length), { shuffle: true });
+    });
+    add('Play Next', 'queue', () => {
+      if (!P || !P.queue) return;
+      ctx.songs.forEach((s, n) => {
+        P.queue.push(s);
+        P.order.splice(P.pos + 1 + n, 0, P.queue.length - 1);
+      });
+    });
+    add(`Keep ${ctx.songs.length} Offline`, 'download', async () => {
+      for (const s of ctx.songs) {
+        try { await Offline.save(s); } catch (err) { console.warn('save failed', s.id, err); }
+      }
+    });
+    actionSheet.hidden = false;
+    showOverlay();
+    requestAnimationFrame(() => actionSheet.classList.add('open'));
+  };
   function openSongSheet(song) {
     if (!actionSheet || !actionBody) return;
     actionBody.innerHTML = '';

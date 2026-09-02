@@ -426,6 +426,8 @@
       songs.forEach((s, i) => list.appendChild(songRow(s, songs, i, { numbered: true })));
       wrap.appendChild(list);
       stagger(list);
+      // Feeds the header's "..." button, which is shared across detail views.
+      detailContext = { kind: 'album', title: album.name, songs };
     },
 
     async openArtist(id) {
@@ -465,6 +467,7 @@
       songs.forEach((s, i) => list.appendChild(songRow(s, songs, i)));
       wrap.appendChild(list);
       stagger(list);
+      detailContext = { kind: 'playlist', title: playlist.name, songs };
     },
 
     async showLibrary(tab) {
@@ -486,18 +489,37 @@
         content.innerHTML = '';
         idx.forEach((group) => (group.artist || []).forEach((a) => content.appendChild(artistRow(a))));
         if (!content.children.length) content.innerHTML = '<div class="empty-state">No artists found</div>';
+      } else if (tab === 'downloaded') {
+        // This tab had no branch at all, so it fell through and rendered the
+        // playlist list instead of the offline tracks.
+        const Off = window.NipoOffline;
+        const recs = Off && Off.list ? await Off.list() : [];
+        const songs = recs.map((r) => r.song).filter(Boolean);
+        content.innerHTML = '';
+        if (!songs.length) {
+          content.innerHTML = '<div class="empty-state">Nothing downloaded yet</div>';
+        } else {
+          const list = el('div', 'song-list');
+          songs.forEach((s, i) => list.appendChild(songRow(s, songs, i)));
+          content.appendChild(list);
+          stagger(list);
+        }
       } else {
         const data = await Api.call('getPlaylists');
         const pls = (data.playlists && data.playlists.playlist) || [];
         content.innerHTML = '';
         pls.forEach((p) => content.appendChild(playlistRow(p)));
         if (!pls.length) content.innerHTML = '<div class="empty-state">No playlists found</div>';
+        stagger(content);
       }
     },
   };
 
   // Lets the action sheet in extras.js navigate ("Go to Album").
   window.NipoViews = Views;
+
+  // Whatever detail view is on screen, for the shared header "..." button.
+  let detailContext = null;
 
   // Stamps each child's position so the CSS can stagger their entrance.
   function stagger(container) {
@@ -620,6 +642,16 @@
   }, { passive: true });
   viewsEl.addEventListener('touchend', () => { swX = null; });
   document.querySelectorAll('[data-back]').forEach((btn) => btn.addEventListener('click', () => Nav.back()));
+
+  // The "..." in each detail header had no handler at all — three dead
+  // buttons, one per detail view. They share one menu driven by whichever
+  // view is currently open.
+  document.querySelectorAll('.detail-head-row .round-btn:not([data-back])').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (!detailContext || !detailContext.songs.length) return;
+      if (window.NipoOpenListSheet) window.NipoOpenListSheet(detailContext);
+    });
+  });
   document.querySelectorAll('#library-tabs .seg-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('#library-tabs .seg-btn').forEach((b) => b.classList.remove('active'));
