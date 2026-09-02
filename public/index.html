@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 <title>Music</title>
 
-<!-- PWA / iOS home-screen app metadata -->
 <link rel="manifest" href="/manifest.webmanifest" />
 <meta name="theme-color" content="#000000" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -17,12 +16,6 @@
 </head>
 <body>
 
-<!--
-  SF Symbols-style icon sprite. Every glyph is drawn on a 24x24 grid and uses
-  currentColor, so a button's colour drives its icon. Solid glyphs are stroked
-  in the colour they are filled with, which is what rounds their corners the
-  way Apple's transport controls are rounded.
--->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
 
   <symbol id="i-play" viewBox="0 0 24 24">
@@ -94,6 +87,14 @@
     <circle cx="10.6" cy="10.6" r="7" fill="none" stroke="currentColor" stroke-width="2"/>
     <path d="m15.8 15.8 4.8 4.8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
   </symbol>
+  <symbol id="i-sparkle" viewBox="0 0 24 24">
+    <path d="M12 3.2 13.6 9l6 1.6-6 1.6L12 18.8 10.4 12.4 4.4 10.8l6-1.6z" fill="currentColor"/>
+  </symbol>
+  <symbol id="i-radio" viewBox="0 0 24 24">
+    <circle cx="12" cy="14" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/>
+    <path d="M7.2 9.2a6.8 6.8 0 0 1 9.6 0M4.6 6.4a10.4 10.4 0 0 1 14.8 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <path d="M12 17.2V20.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  </symbol>
 
   <symbol id="i-chevron-left" viewBox="0 0 24 24">
     <path d="M15 3.8 6.8 12 15 20.2" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
@@ -110,10 +111,16 @@
     <circle cx="6.6" cy="18" r="2.7" fill="currentColor"/>
     <circle cx="16.6" cy="16" r="2.7" fill="currentColor"/>
   </symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24">
+    <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="i-list-plus" viewBox="0 0 24 24">
+    <path d="M4 7h11M4 12h8M4 17h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <path d="M17 14v6M14 17h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  </symbol>
 
 </defs></svg>
 
-<!-- ===== Login screen ===== -->
 <section id="login-screen" class="screen login-screen">
   <div class="login-card">
     <svg class="ic login-logo"><use href="#i-note"></use></svg>
@@ -138,14 +145,18 @@
   </div>
 </section>
 
-<!-- ===== App shell ===== -->
 <div id="app" class="app" hidden>
 
   <header class="topbar">
     <div class="topbar-title" id="topbar-title">Home</div>
-    <button class="round-btn glass" id="logout-btn" aria-label="Sign out">
-      <svg class="ic"><use href="#i-power"></use></svg>
-    </button>
+    <div class="topbar-actions">
+      <button class="round-btn glass" id="create-playlist-btn" aria-label="New playlist">
+        <svg class="ic"><use href="#i-plus"></use></svg>
+      </button>
+      <button class="round-btn glass" id="logout-btn" aria-label="Sign out">
+        <svg class="ic"><use href="#i-power"></use></svg>
+      </button>
+    </div>
   </header>
 
   <main id="views" class="views">
@@ -154,6 +165,14 @@
       <div class="section" id="home-recent"></div>
       <div class="section" id="home-random"></div>
       <div class="section" id="home-frequent"></div>
+    </section>
+
+    <section id="view-new" class="view" hidden>
+      <div id="new-content"></div>
+    </section>
+
+    <section id="view-radio" class="view" hidden>
+      <div id="radio-content"></div>
     </section>
 
     <section id="view-search" class="view" hidden>
@@ -165,9 +184,9 @@
 
     <section id="view-library" class="view" hidden>
       <div class="segmented" id="library-tabs">
-        <button class="seg-btn active" data-lib="albums">Albums</button>
+        <button class="seg-btn active" data-lib="playlists">Playlists</button>
+        <button class="seg-btn" data-lib="albums">Albums</button>
         <button class="seg-btn" data-lib="artists">Artists</button>
-        <button class="seg-btn" data-lib="playlists">Playlists</button>
       </div>
       <div id="library-content"></div>
     </section>
@@ -198,7 +217,6 @@
 
   </main>
 
-  <!-- Mini player -->
   <div id="mini-player" class="mini-player glass" hidden>
     <img id="mini-cover" class="mini-cover" alt="" />
     <div class="mini-meta">
@@ -213,10 +231,16 @@
     </button>
   </div>
 
-  <!-- Tab bar -->
-  <nav class="tabbar glass">
+  <nav class="tabbar glass" id="tabbar">
+    <div class="tab-pill" id="tab-pill"></div>
     <button class="tab-btn active" data-view="home">
       <svg class="ic tab-icon"><use href="#i-home"></use></svg><span>Home</span>
+    </button>
+    <button class="tab-btn" data-view="new">
+      <svg class="ic tab-icon"><use href="#i-sparkle"></use></svg><span>New</span>
+    </button>
+    <button class="tab-btn" data-view="radio">
+      <svg class="ic tab-icon"><use href="#i-radio"></use></svg><span>Radio</span>
     </button>
     <button class="tab-btn" data-view="library">
       <svg class="ic tab-icon"><use href="#i-library"></use></svg><span>Library</span>
@@ -226,7 +250,6 @@
     </button>
   </nav>
 
-  <!-- Full-screen Now Playing sheet -->
   <div id="now-playing" class="now-playing" hidden>
     <div class="np-grabber" id="np-collapse"></div>
 
@@ -243,7 +266,7 @@
         <button class="round-btn glass" id="np-star" aria-label="Favourite">
           <svg class="ic"><use href="#i-star"></use></svg>
         </button>
-        <button class="round-btn glass" aria-label="More">
+        <button class="round-btn glass" id="np-more" aria-label="More">
           <svg class="ic"><use href="#i-ellipsis"></use></svg>
         </button>
       </div>
@@ -289,6 +312,22 @@
     </div>
   </div>
 
+</div>
+
+<div id="sheet-overlay" class="sheet-overlay" hidden></div>
+
+<div id="action-sheet" class="action-sheet glass" hidden>
+  <div class="sheet-handle"></div>
+  <div id="action-sheet-body"></div>
+</div>
+
+<div id="create-sheet" class="create-sheet glass" hidden>
+  <h3>New Playlist</h3>
+  <input id="create-name" type="text" placeholder="Playlist name" maxlength="80" />
+  <div class="create-actions">
+    <button class="ghost" id="create-cancel" type="button">Cancel</button>
+    <button class="primary" id="create-confirm" type="button">Create</button>
+  </div>
 </div>
 
 <audio id="audio" preload="metadata"></audio>
