@@ -303,13 +303,19 @@ input::placeholder { color: var(--text-dim); }
 .search-fab.active { color: var(--accent); }
 .search-fab:active { transform: scale(0.9); }
 
+/* ===================================================================
+   NOW PLAYING
+   Built on an explicit scale rather than ad-hoc numbers:
+   spacing steps of 4, and the iOS type ramp (12 / 13 / 15 / 17 / 22).
+   =================================================================== */
 .now-playing {
   position: fixed; inset: 0; z-index: 50;
+  /* Tint sits over near-black so light artwork cannot wash the text out. */
   background:
-    radial-gradient(120% 80% at 50% 0%, var(--np-tint-hi), transparent 70%),
-    linear-gradient(180deg, var(--np-tint), #0d0d0f 88%);
+    radial-gradient(140% 100% at 50% -10%, var(--np-tint-hi), transparent 62%),
+    linear-gradient(180deg, var(--np-tint) 0%, #0a0a0c 78%);
   display: flex; flex-direction: column; align-items: center;
-  padding: calc(10px + var(--safe-top)) 30px calc(18px + var(--safe-bottom));
+  padding: calc(8px + var(--safe-top)) 24px calc(12px + var(--safe-bottom));
   transform: translateY(100%);
   transition: transform 0.44s cubic-bezier(0.32, 0.72, 0, 1);
   will-change: transform;
@@ -325,103 +331,150 @@ input::placeholder { color: var(--text-dim); }
 .now-playing.dragging { transition: none; }
 
 .np-grabber {
-  width: 38px; height: 5px; border-radius: 3px;
+  width: 36px; height: 5px; border-radius: 2.5px;
   background: rgba(255, 255, 255, 0.3);
-  flex-shrink: 0; margin-bottom: 14px;
-  transition: background 0.2s, width 0.2s;
+  flex-shrink: 0; margin: 4px 0 8px;
+  transition: background 0.2s, width 0.2s, transform 0.2s;
 }
-.now-playing.dragging .np-grabber { background: rgba(255, 255, 255, 0.55); width: 46px; }
+.now-playing.dragging .np-grabber {
+  background: rgba(255, 255, 255, 0.6);
+  transform: scaleX(1.25);
+}
 
-.np-cover-wrap { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; min-height: 0; }
+/* Artwork owns the free space; everything below is fixed height. */
+.np-cover-wrap {
+  flex: 1 1 auto;
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; min-height: 0;
+  padding: 8px 0 4px;
+}
 .np-cover {
-  width: 100%; max-width: min(84vw, 370px); aspect-ratio: 1/1;
-  border-radius: 12px; object-fit: cover; background: var(--surface);
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.38);
-  transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
-  /* Stops iOS starting its own image drag, which would cancel the swipe. */
+  /* Width drives height through aspect-ratio. Pinning both (height:100% plus
+     max-width) let height win and the artwork came out stretched portrait. */
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 24px 56px -12px rgba(0, 0, 0, 0.7);
   -webkit-user-drag: none;
   pointer-events: none;
 }
-.now-playing.paused .np-cover { transform: scale(0.87); }
+/* Paused pulls the art in, the way Apple Music shrinks it off the beat. */
+.now-playing.paused .np-cover {
+  transform: scale(0.86);
+  box-shadow: 0 14px 30px -10px rgba(0, 0, 0, 0.6);
+}
 
-.np-meta-row { display: flex; align-items: center; gap: 12px; width: 100%; margin-top: 26px; }
+/* --- Title row --- */
+.np-meta-row {
+  display: flex; align-items: flex-start; gap: 16px;
+  width: 100%; margin-top: 28px;
+}
 .np-meta { flex: 1; min-width: 0; }
-.np-title { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.np-artist { font-size: 21px; color: rgba(255, 255, 255, 0.55); letter-spacing: -0.4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
-.np-meta-btns { display: flex; gap: 10px; flex-shrink: 0; }
-.np-meta-btns .round-btn { width: 34px; height: 34px; font-size: 15px; }
+.np-title {
+  font-size: 22px; font-weight: 700; letter-spacing: -0.4px; line-height: 1.18;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.np-artist {
+  font-size: 22px; font-weight: 400; letter-spacing: -0.4px; line-height: 1.18;
+  color: rgba(255, 255, 255, 0.56);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-top: 2px;
+}
+.np-meta-btns { display: flex; gap: 8px; flex-shrink: 0; padding-top: 2px; }
+.np-meta-btns .round-btn {
+  width: 32px; height: 32px; font-size: 14px;
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: none; -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+.np-meta-btns .round-btn::before { content: none; }
 .np-meta-btns .round-btn.on { color: var(--accent); }
 
+/* --- Sliders --- */
+/* --pct is kept in sync from JS so the elapsed portion reads brighter. */
 .np-slider input[type=range] {
   display: block;
   width: 100%; -webkit-appearance: none; appearance: none;
-  height: 7px; border-radius: 4px; padding: 0;
+  height: 7px; border-radius: 3.5px; padding: 0; border: none;
   --pct: 0%;
   background: linear-gradient(
     to right,
-    rgba(255, 255, 255, 0.65) var(--pct),
-    rgba(255, 255, 255, 0.2) var(--pct)
+    rgba(255, 255, 255, 0.85) var(--pct),
+    rgba(255, 255, 255, 0.22) var(--pct)
   );
-  box-shadow: inset 0 0.5px 1px rgba(0, 0, 0, 0.3);
-  transition: height 0.22s cubic-bezier(0.32, 0.72, 0, 1),
-              border-radius 0.22s cubic-bezier(0.32, 0.72, 0, 1);
+  transition: height 0.24s cubic-bezier(0.32, 0.72, 0, 1),
+              border-radius 0.24s cubic-bezier(0.32, 0.72, 0, 1);
   touch-action: none;
 }
 .np-slider input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 6px; height: 6px; border-radius: 50%; background: transparent;
+  -webkit-appearance: none; width: 1px; height: 1px; background: transparent;
 }
 .np-slider input[type=range]::-moz-range-thumb {
-  width: 6px; height: 6px; border: none; border-radius: 50%; background: transparent;
+  width: 1px; height: 1px; border: none; background: transparent;
 }
-.np-slider.scrubbing input[type=range] { height: 13px; border-radius: 7px; }
-.np-progress { margin-top: 20px; width: 100%; }
+/* The bar swells under the finger, Apple Music's scrubbing state. */
+.np-slider.scrubbing input[type=range] { height: 12px; border-radius: 6px; }
+
+.np-progress { margin-top: 24px; width: 100%; }
 .np-times {
   display: flex; justify-content: space-between;
-  font-size: 12px; color: rgba(255, 255, 255, 0.45);
-  margin-top: 7px; font-variant-numeric: tabular-nums;
-  transition: color 0.22s;
+  font-size: 12px; font-weight: 500;
+  color: rgba(255, 255, 255, 0.42);
+  margin-top: 8px;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.24s;
 }
-.np-progress.scrubbing .np-times { color: rgba(255, 255, 255, 0.9); }
+.np-progress.scrubbing .np-times { color: rgba(255, 255, 255, 0.85); }
 
-.np-controls { display: flex; align-items: center; justify-content: center; gap: 54px; margin-top: 16px; }
-/* Keep Offline states: pulsing while the blob downloads, red on failure. */
-.round-btn.busy { opacity: 0.55; animation: keep-pulse 1s ease-in-out infinite; }
-.round-btn.failed { color: var(--accent); }
-@keyframes keep-pulse {
-  0%, 100% { opacity: 0.4; }
-  50%      { opacity: 0.9; }
+/* --- Transport --- */
+.np-controls {
+  display: flex; align-items: center; justify-content: space-evenly;
+  width: 74%; margin: 12px auto 0;
 }
-
-/* Apple Music's transport glyphs are flat white with no shadow at all. */
 .np-ctrl-btn {
-  font-size: 34px; line-height: 0; color: var(--text); display: flex;
+  font-size: 32px; line-height: 0; color: #fff; display: flex;
   transition: transform 0.18s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.18s;
 }
-.np-ctrl-btn:active { transform: scale(0.88); opacity: 0.55; }
-.np-play { font-size: 48px; }
+.np-ctrl-btn:active { transform: scale(0.86); opacity: 0.5; }
+.np-play { font-size: 46px; }
 
-.np-volume { display: flex; align-items: center; gap: 11px; width: 100%; margin-top: 22px; }
-.np-volume .vol-icon { font-size: 14px; color: rgba(255, 255, 255, 0.45); flex-shrink: 0; }
+/* --- Volume --- */
+.np-volume {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; margin-top: 26px;
+}
+.np-volume .vol-icon { font-size: 13px; color: rgba(255, 255, 255, 0.42); flex-shrink: 0; }
 .np-volume .np-slider { flex: 1; }
-.np-volume input[type=range] { height: 5px; }
+.np-volume input[type=range] { height: 5px; border-radius: 2.5px; }
+.np-volume .np-slider.scrubbing input[type=range] { height: 10px; border-radius: 5px; }
 
-.np-bottom { display: flex; align-items: center; justify-content: space-around; width: 100%; margin-top: 20px; }
+/* --- Bottom row --- */
+.np-bottom {
+  display: flex; align-items: center; justify-content: space-evenly;
+  width: 100%; margin-top: 22px;
+}
 .np-bottom button {
-  font-size: 19px; color: rgba(255, 255, 255, 0.75);
-  padding: 9px 18px; border-radius: 11px; display: flex;
-  transition: background 0.2s, color 0.2s, transform 0.16s cubic-bezier(0.32, 0.72, 0, 1);
+  font-size: 18px; color: rgba(255, 255, 255, 0.72);
+  width: 44px; height: 34px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.2s, color 0.2s, transform 0.18s cubic-bezier(0.32, 0.72, 0, 1);
 }
 .np-bottom button:active { transform: scale(0.9); }
-.np-bottom button.on { background: rgba(255, 255, 255, 0.2); color: #fff; }
+.np-bottom button.on { background: rgba(255, 255, 255, 0.18); color: #fff; }
 
+/* --- Queue --- */
 .np-queue {
   position: absolute; left: 0; right: 0; bottom: 0;
-  max-height: 62%; overflow-y: auto;
+  max-height: 64%; overflow-y: auto;
   border-radius: 20px 20px 0 0;
-  padding: 14px 20px calc(20px + var(--safe-bottom));
+  padding: 16px 20px calc(20px + var(--safe-bottom));
   touch-action: pan-y;
 }
-.np-queue-title { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+.np-queue-title { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; margin-bottom: 8px; }
 
 .sheet-overlay {
   position: fixed; inset: 0; z-index: 60;
