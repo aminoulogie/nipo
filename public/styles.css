@@ -6,13 +6,12 @@
   --text-dim: #98989f;
   --accent: #fa2d48;
   --separator: rgba(255, 255, 255, 0.09);
-  /* Both overwritten at runtime from the current track's artwork. */
   --np-tint: #2a2a2e;
   --np-tint-hi: #3a3a40;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --tabbar-h: 56px;
-  --miniplayer-h: 56px;
+  --tabbar-h: 64px;
+  --miniplayer-h: 58px;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -42,8 +41,6 @@ input {
 }
 input::placeholder { color: var(--text-dim); }
 
-/* ===== Icons ===== */
-/* Glyphs inherit the current text colour and scale with font-size. */
 .ic {
   width: 1em; height: 1em;
   display: inline-block;
@@ -51,35 +48,29 @@ input::placeholder { color: var(--text-dim); }
   flex-shrink: 0;
 }
 
-/* ===== Liquid glass ===== */
-/* A translucent pane that refracts what sits behind it: heavy blur plus
-   saturation boost for the tint, a bright top edge and a dimmer bottom edge
-   for the bevel, and a soft outer shadow to lift it off the page. */
 .glass {
   position: relative;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.045) 46%, rgba(255, 255, 255, 0.02));
-  backdrop-filter: blur(28px) saturate(190%) brightness(1.06);
-  -webkit-backdrop-filter: blur(28px) saturate(190%) brightness(1.06);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05) 46%, rgba(255, 255, 255, 0.03));
+  backdrop-filter: blur(32px) saturate(190%) brightness(1.08);
+  -webkit-backdrop-filter: blur(32px) saturate(190%) brightness(1.08);
   box-shadow:
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.3),
-    inset 0 0 0 0.5px rgba(255, 255, 255, 0.12),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.32),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.14),
     inset 0 -1px 0 0 rgba(255, 255, 255, 0.05),
     0 8px 30px rgba(0, 0, 0, 0.45);
 }
-/* Specular sheen across the top third. */
 .glass::before {
   content: '';
   position: absolute; inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  background: linear-gradient(163deg, rgba(255, 255, 255, 0.17), rgba(255, 255, 255, 0) 42%);
+  background: linear-gradient(163deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0) 42%);
 }
 @media (prefers-reduced-transparency: reduce) {
   .glass { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(38, 38, 42, 0.96); }
 }
 
-/* Explicit-content badge. */
 .explicit {
   display: inline-block;
   font-size: 9px; font-weight: 600; line-height: 1;
@@ -88,7 +79,6 @@ input::placeholder { color: var(--text-dim); }
   vertical-align: 1.5px; margin-left: 5px;
 }
 
-/* ===== Login ===== */
 .login-screen {
   min-height: 100dvh;
   display: flex; align-items: center; justify-content: center;
@@ -109,8 +99,15 @@ input::placeholder { color: var(--text-dim); }
 #login-btn:active { opacity: 0.8; }
 .login-error { color: var(--accent); font-size: 13px; margin: 4px 0 0; }
 
-/* ===== App shell ===== */
-.app { height: 100dvh; display: flex; flex-direction: column; }
+.app {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  max-width: 430px;
+  margin: 0 auto;
+  position: relative;
+  background: var(--bg);
+}
 
 .topbar {
   padding: calc(8px + var(--safe-top)) 18px 6px;
@@ -118,6 +115,7 @@ input::placeholder { color: var(--text-dim); }
   flex-shrink: 0;
 }
 .topbar-title { font-size: 30px; font-weight: 700; letter-spacing: -0.8px; }
+.topbar-actions { display: flex; gap: 8px; }
 
 .round-btn {
   width: 32px; height: 32px; border-radius: 50%;
@@ -130,7 +128,7 @@ input::placeholder { color: var(--text-dim); }
 .views { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .view {
   padding: 0 18px;
-  padding-bottom: calc(var(--tabbar-h) + var(--miniplayer-h) + var(--safe-bottom) + 26px);
+  padding-bottom: calc(var(--tabbar-h) + var(--miniplayer-h) + var(--safe-bottom) + 36px);
 }
 
 .section { margin-bottom: 28px; }
@@ -154,7 +152,6 @@ input::placeholder { color: var(--text-dim); }
 .grid .card { flex: none; width: 100%; }
 .grid .card-cover { width: 100%; height: auto; aspect-ratio: 1/1; }
 
-/* ===== List rows ===== */
 .list-row { display: flex; align-items: center; gap: 11px; padding: 8px 0; position: relative; }
 .list-row::after {
   content: ''; position: absolute; left: 57px; right: 0; bottom: 0;
@@ -172,7 +169,6 @@ input::placeholder { color: var(--text-dim); }
 .tracklist .list-row::after { left: 0; }
 .tracklist .row-index { width: 24px; text-align: center; color: var(--text-dim); font-size: 15px; flex-shrink: 0; }
 
-/* ===== Play / Shuffle pair ===== */
 .action-row { display: flex; gap: 12px; margin: 4px 0 22px; }
 .action-btn {
   flex: 1; background: var(--surface); color: var(--accent);
@@ -183,17 +179,14 @@ input::placeholder { color: var(--text-dim); }
 .action-btn .ic { font-size: 17px; }
 .action-btn:active { background: var(--surface-2); transform: scale(0.97); }
 
-/* Segmented control (Library) */
 .segmented { display: flex; gap: 4px; margin: 10px 0 16px; background: var(--surface); border-radius: 9px; padding: 3px; }
 .seg-btn { flex: 1; padding: 7px 0; border-radius: 7px; font-size: 13.5px; font-weight: 600; color: var(--text-dim); }
 .seg-btn.active { background: var(--surface-2); color: var(--text); }
 
-/* Search */
 .search-bar { padding: 4px 0 12px; }
 .search-bar input { width: 100%; border-radius: 10px; }
 .result-group-title { font-size: 21px; font-weight: 700; letter-spacing: -0.5px; margin: 20px 0 8px; }
 
-/* Album / Artist detail */
 .detail-head-row { display: flex; align-items: center; justify-content: space-between; padding: 4px 0 14px; }
 .detail-header { text-align: center; padding: 2px 0 20px; }
 .detail-cover {
@@ -206,16 +199,38 @@ input::placeholder { color: var(--text-dim); }
 
 .empty-state { color: var(--text-dim); text-align: center; padding: 44px 20px; font-size: 14px; }
 
-/* ===== Mini player (floating glass pill) ===== */
+.starred-tile {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 0 14px;
+}
+.starred-art {
+  width: 56px; height: 56px; border-radius: 8px;
+  background: linear-gradient(145deg, #ff5a7a, #fa2d48 55%, #9b1b32);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; color: #fff;
+  box-shadow: 0 6px 16px rgba(250, 45, 72, 0.35);
+}
+.create-row {
+  color: var(--accent);
+  font-size: 16px;
+  font-weight: 600;
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 0 16px;
+}
+
 .mini-player {
-  position: fixed; left: 10px; right: 10px;
-  bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 12px);
+  position: fixed;
+  left: max(10px, calc(50% - 205px));
+  right: max(10px, calc(50% - 205px));
+  bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 10px);
   height: var(--miniplayer-h);
-  border-radius: 16px;
+  border-radius: 18px;
   display: flex; align-items: center; gap: 10px; padding: 0 8px;
   z-index: 20;
+  max-width: 410px;
+  margin: 0 auto;
 }
-.mini-cover { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; background: var(--surface); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45); }
+.mini-cover { width: 42px; height: 42px; border-radius: 8px; object-fit: cover; background: var(--surface); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45); }
 .mini-meta { flex: 1; min-width: 0; }
 .mini-title { font-size: 14.5px; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mini-artist { font-size: 13px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -225,25 +240,44 @@ input::placeholder { color: var(--text-dim); }
 }
 .mini-btn:active { transform: scale(0.86); }
 
-/* ===== Tab bar ===== */
 .tabbar {
-  position: fixed; left: 0; right: 0; bottom: 0;
-  height: calc(var(--tabbar-h) + var(--safe-bottom));
-  padding: 0 6px var(--safe-bottom);
-  display: flex; align-items: center;
-  border-radius: 0;
+  position: fixed;
+  left: max(12px, calc(50% - 203px));
+  right: max(12px, calc(50% - 203px));
+  bottom: calc(8px + var(--safe-bottom));
+  height: var(--tabbar-h);
+  max-width: 406px;
+  margin: 0 auto;
+  padding: 6px;
+  display: flex;
+  align-items: stretch;
+  border-radius: 22px;
   z-index: 10;
 }
-.tab-btn {
-  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 3px; font-size: 10px; font-weight: 500; color: var(--text-dim);
-  padding: 6px 0; border-radius: 12px; margin: 0 2px;
-  transition: color 0.2s, background 0.2s;
+.tab-pill {
+  position: absolute;
+  top: 6px; bottom: 6px;
+  left: 6px;
+  width: 0;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+  transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1), width 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+  pointer-events: none;
+  z-index: 0;
 }
-.tab-btn.active { color: var(--accent); background: rgba(255, 255, 255, 0.11); }
-.tab-icon { font-size: 21px; }
+.tab-btn {
+  flex: 1;
+  position: relative;
+  z-index: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px; font-size: 10px; font-weight: 500; color: var(--text-dim);
+  padding: 4px 0; border-radius: 16px;
+  transition: color 0.2s;
+}
+.tab-btn.active { color: var(--accent); }
+.tab-icon { font-size: 20px; }
 
-/* ===== Now playing sheet ===== */
 .now-playing {
   position: fixed; inset: 0; z-index: 50;
   background:
@@ -255,9 +289,10 @@ input::placeholder { color: var(--text-dim); }
   transition: transform 0.44s cubic-bezier(0.32, 0.72, 0, 1);
   touch-action: none;
   will-change: transform;
+  max-width: 430px;
+  margin: 0 auto;
 }
 .now-playing.open { transform: translateY(0); }
-/* Suppressed while a finger is dragging the sheet, so it tracks 1:1. */
 .now-playing.dragging { transition: none; }
 
 .np-grabber {
@@ -275,7 +310,6 @@ input::placeholder { color: var(--text-dim); }
   box-shadow: 0 26px 60px rgba(0, 0, 0, 0.62), 0 4px 14px rgba(0, 0, 0, 0.4);
   transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
 }
-/* Artwork shrinks while paused, the way Apple Music does. */
 .now-playing.paused .np-cover { transform: scale(0.87); }
 
 .np-meta-row { display: flex; align-items: center; gap: 12px; width: 100%; margin-top: 26px; }
@@ -286,9 +320,6 @@ input::placeholder { color: var(--text-dim); }
 .np-meta-btns .round-btn { width: 34px; height: 34px; font-size: 15px; }
 .np-meta-btns .round-btn.on { color: var(--accent); }
 
-/* ===== Sliders ===== */
-/* --pct is kept in sync from JS so the elapsed portion reads brighter, the
-   way Apple Music fills its scrubber. */
 .np-slider input[type=range] {
   display: block;
   width: 100%; -webkit-appearance: none; appearance: none;
@@ -310,8 +341,6 @@ input::placeholder { color: var(--text-dim); }
 .np-slider input[type=range]::-moz-range-thumb {
   width: 6px; height: 6px; border: none; border-radius: 50%; background: transparent;
 }
-/* The bar swells under the finger and the times brighten — Apple Music's
-   scrubbing state. */
 .np-slider.scrubbing input[type=range] { height: 13px; border-radius: 7px; }
 .np-progress { margin-top: 20px; width: 100%; }
 .np-times {
@@ -336,7 +365,6 @@ input::placeholder { color: var(--text-dim); }
 .np-volume .np-slider { flex: 1; }
 .np-volume input[type=range] { height: 5px; }
 
-/* Bottom icon row */
 .np-bottom { display: flex; align-items: center; justify-content: space-around; width: 100%; margin-top: 20px; }
 .np-bottom button {
   font-size: 19px; color: rgba(255, 255, 255, 0.75);
@@ -346,7 +374,6 @@ input::placeholder { color: var(--text-dim); }
 .np-bottom button:active { transform: scale(0.9); }
 .np-bottom button.on { background: rgba(255, 255, 255, 0.2); color: #fff; }
 
-/* Queue panel */
 .np-queue {
   position: absolute; left: 0; right: 0; bottom: 0;
   max-height: 62%; overflow-y: auto;
@@ -356,7 +383,68 @@ input::placeholder { color: var(--text-dim); }
 }
 .np-queue-title { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
 
+.sheet-overlay {
+  position: fixed; inset: 0; z-index: 60;
+  background: rgba(0,0,0,0.45);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s;
+}
+.sheet-overlay.open { opacity: 1; pointer-events: auto; }
+
+.action-sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 70;
+  max-width: 430px; margin: 0 auto;
+  border-radius: 20px 20px 0 0;
+  padding: 10px 8px calc(14px + var(--safe-bottom));
+  transform: translateY(110%);
+  transition: transform 0.36s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.action-sheet.open { transform: translateY(0); }
+.sheet-handle {
+  width: 36px; height: 5px; border-radius: 3px;
+  background: rgba(255,255,255,0.28);
+  margin: 4px auto 12px;
+}
+.sheet-item {
+  width: 100%;
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 14px;
+  font-size: 16px;
+  text-align: left;
+  border-radius: 12px;
+}
+.sheet-item:active { background: rgba(255,255,255,0.08); }
+.sheet-item .ic { font-size: 18px; color: var(--text-dim); }
+.sheet-item.danger { color: var(--accent); }
+
+.create-sheet {
+  position: fixed; left: 12px; right: 12px; bottom: calc(12px + var(--safe-bottom)); z-index: 70;
+  max-width: 406px; margin: 0 auto;
+  border-radius: 20px;
+  padding: 18px 16px 16px;
+  transform: translateY(120%);
+  transition: transform 0.36s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.create-sheet.open { transform: translateY(0); }
+.create-sheet h3 { margin: 0 0 12px; font-size: 18px; }
+.create-sheet input { width: 100%; margin-bottom: 12px; }
+.create-actions { display: flex; gap: 8px; }
+.create-actions button {
+  flex: 1; padding: 12px; border-radius: 12px; font-weight: 600; font-size: 15px;
+}
+.create-actions .primary { background: var(--accent); color: #fff; }
+.create-actions .ghost { background: var(--surface-2); }
+
 [hidden] { display: none !important; }
+
+@media (min-width: 860px) {
+  body {
+    background:
+      radial-gradient(60% 50% at 50% 0%, #2a1220, transparent 70%),
+      #050505;
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: 0.01ms !important; }
