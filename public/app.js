@@ -425,6 +425,7 @@
       const list = el('div', 'tracklist');
       songs.forEach((s, i) => list.appendChild(songRow(s, songs, i, { numbered: true })));
       wrap.appendChild(list);
+      stagger(list);
     },
 
     async openArtist(id) {
@@ -463,6 +464,7 @@
       const list = el('div', 'song-list');
       songs.forEach((s, i) => list.appendChild(songRow(s, songs, i)));
       wrap.appendChild(list);
+      stagger(list);
     },
 
     async showLibrary(tab) {
@@ -476,6 +478,7 @@
         const grid = el('div', 'grid');
         albums.forEach((a) => grid.appendChild(albumCard(a)));
         content.appendChild(grid);
+        stagger(grid);
         if (!albums.length) content.innerHTML = '<div class="empty-state">No albums found</div>';
       } else if (tab === 'artists') {
         const data = await Api.call('getArtists');
@@ -496,6 +499,21 @@
   // Lets the action sheet in extras.js navigate ("Go to Album").
   window.NipoViews = Views;
 
+  // Stamps each child's position so the CSS can stagger their entrance.
+  function stagger(container) {
+    if (!container) return;
+    let i = 0;
+    for (const child of container.children) {
+      if (child.classList.contains('list-row') || child.classList.contains('card')) {
+        // Capped so a long list does not visibly crawl in from the bottom.
+        child.style.setProperty('--i', Math.min(i++, 12));
+      } else {
+        stagger(child); // grids and groups nest one level down
+      }
+    }
+  }
+  window.NipoStagger = stagger;
+
   function renderSection(containerId, title, albums) {
     const c = document.getElementById(containerId);
     if (!albums || !albums.length) { c.innerHTML = ''; return; }
@@ -503,6 +521,7 @@
     const row = el('div', 'carousel');
     albums.forEach((a) => row.appendChild(albumCard(a)));
     c.appendChild(row);
+    stagger(row);
   }
 
   // ---------- Search ----------
@@ -527,6 +546,7 @@
         const grid = el('div', 'grid');
         r.album.forEach((a) => grid.appendChild(albumCard(a)));
         results.appendChild(grid);
+        stagger(grid);
       }
       if ((r.song || []).length) {
         results.appendChild(el('div', 'result-group-title', 'Songs'));
