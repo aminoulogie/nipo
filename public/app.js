@@ -324,7 +324,12 @@
       </div>
       <button class="row-more" aria-label="More">${icon('ellipsis')}</button>`;
     row.addEventListener('click', (e) => {
-      if (e.target.closest('.row-more')) return;
+      // extras.js owns the action sheet; these rows previously swallowed the
+      // tap and opened nothing.
+      if (e.target.closest('.row-more')) {
+        if (window.NipoOpenSongSheet) window.NipoOpenSongSheet(song);
+        return;
+      }
       Player.playQueue(list, idx);
     });
     return row;
@@ -488,6 +493,9 @@
     },
   };
 
+  // Lets the action sheet in extras.js navigate ("Go to Album").
+  window.NipoViews = Views;
+
   function renderSection(containerId, title, albums) {
     const c = document.getElementById(containerId);
     if (!albums || !albums.length) { c.innerHTML = ''; return; }
@@ -560,6 +568,37 @@
   document.querySelectorAll('.tab-btn').forEach((btn) => {
     btn.addEventListener('click', () => Nav.tabTo(btn.dataset.view));
   });
+
+  // Horizontal swipe across the content area moves between tabs. Only fires
+  // when the gesture is clearly sideways, so it never fights vertical
+  // scrolling or a horizontal carousel.
+  const viewsEl = document.getElementById('views');
+  const TAB_ORDER = [...document.querySelectorAll('.tab-btn')].map((b) => b.dataset.view);
+  let swX = null, swY = null, swLocked = false;
+  viewsEl.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1) return;
+    // A carousel or slider under the finger keeps its own horizontal drag.
+    if (e.target.closest('.carousel, input[type=range]')) { swX = null; return; }
+    swX = e.touches[0].clientX;
+    swY = e.touches[0].clientY;
+    swLocked = false;
+  }, { passive: true });
+  viewsEl.addEventListener('touchmove', (e) => {
+    if (swX === null || swLocked) return;
+    const dx = e.touches[0].clientX - swX;
+    const dy = e.touches[0].clientY - swY;
+    if (Math.abs(dy) > Math.abs(dx)) { swX = null; return; } // vertical scroll wins
+    if (Math.abs(dx) < 60) return;
+    swLocked = true;
+    const cur = document.querySelector('.tab-btn.active');
+    const i = TAB_ORDER.indexOf(cur && cur.dataset.view);
+    if (i === -1) return;
+    const next = TAB_ORDER[dx < 0 ? i + 1 : i - 1];
+    if (!next) return;
+    const btn = document.querySelector(`.tab-btn[data-view="${next}"]`);
+    if (btn) btn.click(); // click so extras.js pill/lazy-loading also runs
+  }, { passive: true });
+  viewsEl.addEventListener('touchend', () => { swX = null; });
   document.querySelectorAll('[data-back]').forEach((btn) => btn.addEventListener('click', () => Nav.back()));
   document.querySelectorAll('#library-tabs .seg-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -658,11 +697,56 @@
   document.getElementById('np-repeat').addEventListener('click', () => Player.toggleRepeat());
 
   const npQueue = document.getElementById('np-queue');
-  document.getElementById('np-queue-btn').addEventListener('click', (e) => {
-    npQueue.hidden = !npQueue.hidden;
-    e.currentTarget.classList.toggle('on', !npQueue.hidden);
-    if (!npQueue.hidden) renderQueue();
+  const npQueueBtn = document.getElementById('np-queue-btn');
+  function setQueueOpen(open) {
+    npQueue.hidden = !open;
+    npQueueBtn.classList.toggle('on', open);
+    if (open) renderQueue();
+  }
+  npQueueBtn.addEventListener('click', () => setQueueOpen(npQueue.hidden));
+
+  // The queue had no way back once opened. It now closes by dragging it down,
+  // and by tapping the artwork above it.
+  let qFrom = null, qScrollTop = 0;
+  npQueue.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1) return;
+    qFrom = e.touches[0].clientY;
+    qScrollTop = npQueue.scrollTop;
+  }, { passive: true });
+  npQueue.addEventListener('touchmove', (e) => {
+    if (qFrom === null) return;
+    const dy = e.touches[0].clientY - qFrom;
+    // Only treat it as a dismiss once the list is scrolled to the top,
+    // otherwise the drag belongs to the list's own scrolling.
+    if (qScrollTop > 0 || dy <= 0) return;
+    e.preventDefault();
+    npQueue.style.transform = `translateY(${dy}px)`;
+  }, { passive: false });
+  function endQueueDrag(e) {
+    if (qFrom === null) return;
+    const dy = (e.changedTouches ? e.changedTouches[0].clientY : qFrom) - qFrom;
+    qFrom = null;
+    npQueue.style.transition = 'transform 0.3s cubic-bezier(0.32,0.72,0,1)';
+    npQueue.style.transform = '';
+    setTimeout(() => { npQueue.style.transition = ''; }, 320);
+    if (qScrollTop === 0 && dy > 90) setQueueOpen(false);
+  }
+  npQueue.addEventListener('touchend', endQueueDrag);
+  npQueue.addEventListener('touchcancel', endQueueDrag);
+  npSheet.addEventListener('click', (e) => {
+    if (npQueue.hidden) return;
+    if (!e.target.closest('#np-queue, #np-queue-btn')) setQueueOpen(false);
   });
+
+  // The player's own "..." had no handler at all.
+  const npMore = document.getElementById('np-more');
+  if (npMore) {
+    npMore.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const song = Player.current;
+      if (song && window.NipoOpenSongSheet) window.NipoOpenSongSheet(song);
+    });
+  }
 
   // Favourite the playing track (Subsonic star/unstar).
   document.getElementById('np-star').addEventListener('click', async (e) => {
@@ -679,33 +763,70 @@
     }
   });
 
+  // The sheet sets touch-action:none on its whole subtree so the swipe-to-
+  // dismiss gesture is not stolen by the browser. That also disables the
+  // native drag on a range input, so both sliders are driven by hand here:
+  // the value is computed straight from where the finger is along the track.
+  function bindSlider(input, wrap, onChange) {
+    let active = false;
+
+    function valueAt(clientX) {
+      const r = input.getBoundingClientRect();
+      if (!r.width) return Number(input.value);
+      const ratio = Math.min(1, Math.max(0, (clientX - r.left) / r.width));
+      const min = Number(input.min || 0);
+      const max = Number(input.max || 100);
+      return min + ratio * (max - min);
+    }
+    function apply(clientX) {
+      input.value = String(Math.round(valueAt(clientX)));
+      paintSlider(input);
+      onChange(Number(input.value));
+    }
+    function begin(clientX) {
+      active = true;
+      wrap.classList.add('scrubbing');
+      input.dataset.dragging = '1';
+      apply(clientX);
+    }
+    function end() {
+      if (!active) return;
+      active = false;
+      wrap.classList.remove('scrubbing');
+      delete input.dataset.dragging;
+    }
+
+    input.addEventListener('touchstart', (e) => {
+      begin(e.touches[0].clientX);
+    }, { passive: true });
+    input.addEventListener('touchmove', (e) => {
+      if (!active) return;
+      e.preventDefault();
+      apply(e.touches[0].clientX);
+    }, { passive: false });
+    input.addEventListener('touchend', end);
+    input.addEventListener('touchcancel', end);
+
+    // Desktop.
+    input.addEventListener('mousedown', (e) => { e.preventDefault(); begin(e.clientX); });
+    window.addEventListener('mousemove', (e) => { if (active) apply(e.clientX); });
+    window.addEventListener('mouseup', end);
+    // Keyboard / assistive tech still drive the native input.
+    input.addEventListener('input', () => {
+      paintSlider(input);
+      onChange(Number(input.value));
+    });
+  }
+
   const seekEl = document.getElementById('np-seek');
   const seekWrap = document.getElementById('np-progress');
-  ['pointerdown', 'touchstart'].forEach((ev) =>
-    seekEl.addEventListener(ev, () => {
-      seekEl.dataset.dragging = '1';
-      seekWrap.classList.add('scrubbing');
-    }));
-  ['pointerup', 'pointercancel', 'touchend', 'change'].forEach((ev) =>
-    seekEl.addEventListener(ev, () => {
-      delete seekEl.dataset.dragging;
-      seekWrap.classList.remove('scrubbing');
-    }));
-  seekEl.addEventListener('input', (e) => {
-    paintSlider(e.target);
-    if (audio.duration) audio.currentTime = (e.target.value / 1000) * audio.duration;
+  bindSlider(seekEl, seekWrap, (v) => {
+    if (audio.duration) audio.currentTime = (v / 1000) * audio.duration;
   });
 
   const volEl = document.getElementById('np-vol');
   const volWrap = document.getElementById('np-vol-wrap');
-  volEl.addEventListener('input', (e) => {
-    paintSlider(e.target);
-    audio.volume = e.target.value / 100;
-  });
-  ['pointerdown', 'touchstart'].forEach((ev) =>
-    volEl.addEventListener(ev, () => volWrap.classList.add('scrubbing')));
-  ['pointerup', 'pointercancel', 'touchend'].forEach((ev) =>
-    volEl.addEventListener(ev, () => volWrap.classList.remove('scrubbing')));
+  bindSlider(volEl, volWrap, (v) => { audio.volume = v / 100; });
   paintSlider(volEl);
 
   // ---------- Login ----------

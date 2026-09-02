@@ -301,12 +301,27 @@
       b.addEventListener('click', async () => { closeSheets(); await fn(); });
       actionBody.appendChild(b);
     };
-    add(song.starred ? 'Unstar' : 'Star', 'star', async () => {
+    add(song.starred ? 'Undo Favorite' : 'Favorite', 'star', async () => {
       await api(song.starred ? 'unstar' : 'star', { id: song.id });
       song.starred = song.starred ? undefined : new Date().toISOString();
       const starBtn = document.getElementById('np-star');
       if (starBtn) starBtn.classList.toggle('on', !!song.starred);
     });
+    add('Add to Playlist', 'list-plus', () => openAddToPlaylist(song));
+    // Drop the track in directly after whatever is playing.
+    add('Play Next', 'queue', () => {
+      const P = window.NipoPlayer;
+      if (!P || !P.queue) return;
+      P.queue.push(song);
+      P.order.splice(P.pos + 1, 0, P.queue.length - 1);
+    });
+    if (song.albumId || song.parent) {
+      add('Go to Album', 'note', () => {
+        if (window.NipoViews && window.NipoViews.openAlbum) {
+          window.NipoViews.openAlbum(song.albumId || song.parent);
+        }
+      });
+    }
     if (Offline.has(song.id)) {
       add('Remove Download', 'downloaded', async () => {
         await Offline.remove(song.id);
@@ -317,7 +332,6 @@
         try { await Offline.save(song); } catch (err) { console.warn(err); }
       });
     }
-    add('Add to Playlist', 'list-plus', () => openAddToPlaylist(song));
     actionSheet.hidden = false;
     showOverlay();
     requestAnimationFrame(() => actionSheet.classList.add('open'));
@@ -380,9 +394,24 @@
         title: titleEl && titleEl.textContent,
         artist: document.getElementById('np-artist') && document.getElementById('np-artist').textContent,
       };
-      if (Offline.has(id)) await Offline.remove(id);
-      else await Offline.save(song);
-      syncKeepButton(song);
+      // Saving pulls the whole audio blob, which takes seconds on a large
+      // file. With no busy state the button looked dead, and a failure was an
+      // unhandled rejection that surfaced nothing at all.
+      if (keepBtn.dataset.busy) return;
+      keepBtn.dataset.busy = '1';
+      keepBtn.classList.add('busy');
+      try {
+        if (Offline.has(id)) await Offline.remove(id);
+        else await Offline.save(song);
+        syncKeepButton(song);
+      } catch (err) {
+        console.warn('Keep Offline failed', err);
+        keepBtn.classList.add('failed');
+        setTimeout(() => keepBtn.classList.remove('failed'), 1600);
+      } finally {
+        delete keepBtn.dataset.busy;
+        keepBtn.classList.remove('busy');
+      }
     });
   }
 
