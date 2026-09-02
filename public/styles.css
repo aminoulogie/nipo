@@ -29,7 +29,6 @@ html, body {
 }
 
 img { -webkit-touch-callout: none; }
-
 button { font-family: inherit; border: none; background: none; color: inherit; cursor: pointer; }
 
 input {
@@ -43,18 +42,50 @@ input {
 }
 input::placeholder { color: var(--text-dim); }
 
-/* Explicit-content badge, matching the small grey "E" chip. */
+/* ===== Icons ===== */
+/* Glyphs inherit the current text colour and scale with font-size. */
+.ic {
+  width: 1em; height: 1em;
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+/* ===== Liquid glass ===== */
+/* A translucent pane that refracts what sits behind it: heavy blur plus
+   saturation boost for the tint, a bright top edge and a dimmer bottom edge
+   for the bevel, and a soft outer shadow to lift it off the page. */
+.glass {
+  position: relative;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.045) 46%, rgba(255, 255, 255, 0.02));
+  backdrop-filter: blur(28px) saturate(190%) brightness(1.06);
+  -webkit-backdrop-filter: blur(28px) saturate(190%) brightness(1.06);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.3),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.12),
+    inset 0 -1px 0 0 rgba(255, 255, 255, 0.05),
+    0 8px 30px rgba(0, 0, 0, 0.45);
+}
+/* Specular sheen across the top third. */
+.glass::before {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(163deg, rgba(255, 255, 255, 0.17), rgba(255, 255, 255, 0) 42%);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(38, 38, 42, 0.96); }
+}
+
+/* Explicit-content badge. */
 .explicit {
   display: inline-block;
-  font-size: 9px;
-  font-weight: 600;
-  line-height: 1;
-  padding: 2.5px 3px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.32);
-  color: #000;
-  vertical-align: 1.5px;
-  margin-left: 5px;
+  font-size: 9px; font-weight: 600; line-height: 1;
+  padding: 2.5px 3px; border-radius: 3px;
+  background: rgba(255, 255, 255, 0.32); color: #000;
+  vertical-align: 1.5px; margin-left: 5px;
 }
 
 /* ===== Login ===== */
@@ -66,7 +97,7 @@ input::placeholder { color: var(--text-dim); }
   padding-bottom: calc(24px + var(--safe-bottom));
 }
 .login-card { width: 100%; max-width: 360px; text-align: center; }
-.login-logo { font-size: 46px; margin-bottom: 2px; }
+.login-logo { font-size: 46px; color: var(--accent); margin-bottom: 6px; }
 .login-card h1 { margin: 0 0 4px; font-size: 28px; letter-spacing: -0.5px; }
 .login-sub { color: var(--text-dim); margin: 0 0 26px; font-size: 14px; }
 #login-form { display: flex; flex-direction: column; gap: 12px; text-align: left; }
@@ -87,15 +118,14 @@ input::placeholder { color: var(--text-dim); }
   flex-shrink: 0;
 }
 .topbar-title { font-size: 30px; font-weight: 700; letter-spacing: -0.8px; }
-.icon-btn { font-size: 17px; color: var(--text); padding: 6px; }
 
-/* Round translucent buttons (back chevron, "…"), as in the Apple Music header. */
 .round-btn {
   width: 32px; height: 32px; border-radius: 50%;
-  background: rgba(120, 120, 128, 0.32);
   display: inline-flex; align-items: center; justify-content: center;
   font-size: 15px; color: var(--text); flex-shrink: 0;
+  transition: transform 0.18s cubic-bezier(0.32, 0.72, 0, 1);
 }
+.round-btn:active { transform: scale(0.9); }
 
 .views { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .view {
@@ -115,6 +145,7 @@ input::placeholder { color: var(--text-dim); }
 .card-cover {
   width: 154px; height: 154px; border-radius: 8px; object-fit: cover;
   background: var(--surface); display: block;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
 }
 .card-title { font-size: 13.5px; font-weight: 500; margin-top: 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card-sub { font-size: 13px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -124,24 +155,20 @@ input::placeholder { color: var(--text-dim); }
 .grid .card-cover { width: 100%; height: auto; aspect-ratio: 1/1; }
 
 /* ===== List rows ===== */
-.list-row {
-  display: flex; align-items: center; gap: 11px; padding: 8px 0;
-  position: relative;
-}
+.list-row { display: flex; align-items: center; gap: 11px; padding: 8px 0; position: relative; }
 .list-row::after {
   content: ''; position: absolute; left: 57px; right: 0; bottom: 0;
   height: 1px; background: var(--separator);
 }
 .list-row:last-child::after { display: none; }
 .list-row .row-star { color: var(--accent); font-size: 11px; width: 9px; flex-shrink: 0; }
-.list-row .card-cover { width: 46px; height: 46px; border-radius: 4px; flex-shrink: 0; }
+.list-row .card-cover { width: 46px; height: 46px; border-radius: 4px; flex-shrink: 0; box-shadow: 0 2px 7px rgba(0, 0, 0, 0.4); }
 .list-row .row-main { flex: 1; min-width: 0; }
 .list-row .row-title { font-size: 15.5px; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .list-row .row-sub { font-size: 14px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
-.list-row .row-more { color: var(--text-dim); font-size: 16px; padding: 6px 2px 6px 8px; flex-shrink: 0; }
+.list-row .row-more { color: var(--text-dim); font-size: 15px; padding: 6px 2px 6px 8px; flex-shrink: 0; display: flex; }
 .list-row.playing .row-title { color: var(--accent); }
 
-/* Tracklist inside an album: index number instead of artwork. */
 .tracklist .list-row::after { left: 0; }
 .tracklist .row-index { width: 24px; text-align: center; color: var(--text-dim); font-size: 15px; flex-shrink: 0; }
 
@@ -150,9 +177,11 @@ input::placeholder { color: var(--text-dim); }
 .action-btn {
   flex: 1; background: var(--surface); color: var(--accent);
   font-size: 16.5px; font-weight: 600; padding: 13px 0; border-radius: 12px;
-  display: flex; align-items: center; justify-content: center; gap: 7px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: transform 0.18s cubic-bezier(0.32, 0.72, 0, 1), background 0.18s;
 }
-.action-btn:active { background: var(--surface-2); }
+.action-btn .ic { font-size: 17px; }
+.action-btn:active { background: var(--surface-2); transform: scale(0.97); }
 
 /* Segmented control (Library) */
 .segmented { display: flex; gap: 4px; margin: 10px 0 16px; background: var(--surface); border-radius: 9px; padding: 3px; }
@@ -169,7 +198,7 @@ input::placeholder { color: var(--text-dim); }
 .detail-header { text-align: center; padding: 2px 0 20px; }
 .detail-cover {
   width: 232px; height: 232px; border-radius: 8px; object-fit: cover;
-  background: var(--surface); box-shadow: 0 12px 34px rgba(0, 0, 0, 0.55);
+  background: var(--surface); box-shadow: 0 14px 38px rgba(0, 0, 0, 0.6);
 }
 .detail-title { font-size: 21px; font-weight: 600; letter-spacing: -0.4px; margin-top: 16px; }
 .detail-sub { font-size: 20px; color: var(--accent); margin-top: 2px; letter-spacing: -0.3px; }
@@ -177,44 +206,42 @@ input::placeholder { color: var(--text-dim); }
 
 .empty-state { color: var(--text-dim); text-align: center; padding: 44px 20px; font-size: 14px; }
 
-/* ===== Mini player (floating pill) ===== */
+/* ===== Mini player (floating glass pill) ===== */
 .mini-player {
   position: fixed; left: 10px; right: 10px;
   bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 12px);
   height: var(--miniplayer-h);
-  background: rgba(44, 44, 46, 0.82);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border-radius: 14px;
-  display: flex; align-items: center; gap: 10px; padding: 0 8px 0 8px;
+  border-radius: 16px;
+  display: flex; align-items: center; gap: 10px; padding: 0 8px;
   z-index: 20;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
-.mini-cover { width: 40px; height: 40px; border-radius: 5px; object-fit: cover; background: var(--surface); }
+.mini-cover { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; background: var(--surface); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45); }
 .mini-meta { flex: 1; min-width: 0; }
 .mini-title { font-size: 14.5px; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mini-artist { font-size: 13px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mini-btn { font-size: 19px; padding: 8px 9px; color: var(--text); }
+.mini-btn {
+  font-size: 17px; padding: 9px; color: var(--text); display: flex;
+  transition: transform 0.18s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.mini-btn:active { transform: scale(0.86); }
 
-/* ===== Tab bar (floating, pill active state) ===== */
+/* ===== Tab bar ===== */
 .tabbar {
   position: fixed; left: 0; right: 0; bottom: 0;
   height: calc(var(--tabbar-h) + var(--safe-bottom));
   padding: 0 6px var(--safe-bottom);
-  background: rgba(22, 22, 24, 0.86);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
   display: flex; align-items: center;
-  border-top: 1px solid var(--separator);
+  border-radius: 0;
   z-index: 10;
 }
 .tab-btn {
   flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 3px; font-size: 10px; font-weight: 500; color: var(--text-dim);
   padding: 6px 0; border-radius: 12px; margin: 0 2px;
+  transition: color 0.2s, background 0.2s;
 }
-.tab-btn.active { color: var(--accent); background: rgba(120, 120, 128, 0.2); }
-.tab-icon { font-size: 19px; line-height: 1; }
+.tab-btn.active { color: var(--accent); background: rgba(255, 255, 255, 0.11); }
+.tab-icon { font-size: 21px; }
 
 /* ===== Now playing sheet ===== */
 .now-playing {
@@ -225,75 +252,112 @@ input::placeholder { color: var(--text-dim); }
   display: flex; flex-direction: column; align-items: center;
   padding: calc(10px + var(--safe-top)) 30px calc(18px + var(--safe-bottom));
   transform: translateY(100%);
-  transition: transform 0.42s cubic-bezier(0.32, 0.72, 0, 1);
+  transition: transform 0.44s cubic-bezier(0.32, 0.72, 0, 1);
+  touch-action: none;
+  will-change: transform;
 }
 .now-playing.open { transform: translateY(0); }
+/* Suppressed while a finger is dragging the sheet, so it tracks 1:1. */
+.now-playing.dragging { transition: none; }
 
-.np-grabber { width: 38px; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, 0.3); flex-shrink: 0; margin-bottom: 14px; }
+.np-grabber {
+  width: 38px; height: 5px; border-radius: 3px;
+  background: rgba(255, 255, 255, 0.3);
+  flex-shrink: 0; margin-bottom: 14px;
+  transition: background 0.2s, width 0.2s;
+}
+.now-playing.dragging .np-grabber { background: rgba(255, 255, 255, 0.55); width: 46px; }
 
 .np-cover-wrap { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; min-height: 0; }
 .np-cover {
   width: 100%; max-width: min(84vw, 370px); aspect-ratio: 1/1;
-  border-radius: 10px; object-fit: cover; background: var(--surface);
-  box-shadow: 0 22px 55px rgba(0, 0, 0, 0.6);
+  border-radius: 12px; object-fit: cover; background: var(--surface);
+  box-shadow: 0 26px 60px rgba(0, 0, 0, 0.62), 0 4px 14px rgba(0, 0, 0, 0.4);
+  transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
 }
+/* Artwork shrinks while paused, the way Apple Music does. */
+.now-playing.paused .np-cover { transform: scale(0.87); }
 
-/* Title row: text left, star + "…" right. */
 .np-meta-row { display: flex; align-items: center; gap: 12px; width: 100%; margin-top: 26px; }
 .np-meta { flex: 1; min-width: 0; }
 .np-title { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .np-artist { font-size: 21px; color: rgba(255, 255, 255, 0.55); letter-spacing: -0.4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
 .np-meta-btns { display: flex; gap: 10px; flex-shrink: 0; }
-.np-meta-btns .round-btn { width: 34px; height: 34px; background: rgba(255, 255, 255, 0.22); }
+.np-meta-btns .round-btn { width: 34px; height: 34px; font-size: 15px; }
 .np-meta-btns .round-btn.on { color: var(--accent); }
 
-/* Progress + volume sliders */
-.np-slider { width: 100%; }
+/* ===== Sliders ===== */
 /* --pct is kept in sync from JS so the elapsed portion reads brighter, the
    way Apple Music fills its scrubber. */
 .np-slider input[type=range] {
+  display: block;
   width: 100%; -webkit-appearance: none; appearance: none;
   height: 7px; border-radius: 4px; padding: 0;
   --pct: 0%;
   background: linear-gradient(
     to right,
-    rgba(255, 255, 255, 0.62) var(--pct),
+    rgba(255, 255, 255, 0.65) var(--pct),
     rgba(255, 255, 255, 0.2) var(--pct)
   );
+  box-shadow: inset 0 0.5px 1px rgba(0, 0, 0, 0.3);
+  transition: height 0.22s cubic-bezier(0.32, 0.72, 0, 1),
+              border-radius 0.22s cubic-bezier(0.32, 0.72, 0, 1);
+  touch-action: none;
 }
 .np-slider input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 8px; height: 8px; border-radius: 50%;
-  background: transparent;
+  -webkit-appearance: none; width: 6px; height: 6px; border-radius: 50%; background: transparent;
 }
 .np-slider input[type=range]::-moz-range-thumb {
-  width: 8px; height: 8px; border: none; border-radius: 50%; background: transparent;
+  width: 6px; height: 6px; border: none; border-radius: 50%; background: transparent;
 }
-.np-progress { margin-top: 20px; }
-.np-times { display: flex; justify-content: space-between; font-size: 12px; color: rgba(255, 255, 255, 0.45); margin-top: 7px; font-variant-numeric: tabular-nums; }
+/* The bar swells under the finger and the times brighten — Apple Music's
+   scrubbing state. */
+.np-slider.scrubbing input[type=range] { height: 13px; border-radius: 7px; }
+.np-progress { margin-top: 20px; width: 100%; }
+.np-times {
+  display: flex; justify-content: space-between;
+  font-size: 12px; color: rgba(255, 255, 255, 0.45);
+  margin-top: 7px; font-variant-numeric: tabular-nums;
+  transition: color 0.22s;
+}
+.np-progress.scrubbing .np-times { color: rgba(255, 255, 255, 0.9); }
 
-.np-controls { display: flex; align-items: center; justify-content: center; gap: 58px; margin-top: 14px; }
-.np-ctrl-btn { font-size: 32px; line-height: 1; color: var(--text); letter-spacing: -5px; }
-.np-play { font-size: 42px; letter-spacing: normal; }
+.np-controls { display: flex; align-items: center; justify-content: center; gap: 54px; margin-top: 16px; }
+.np-ctrl-btn {
+  font-size: 32px; line-height: 0; color: var(--text); display: flex;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.45));
+  transition: transform 0.16s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.16s;
+}
+.np-ctrl-btn:active { transform: scale(0.84); opacity: 0.7; }
+.np-play { font-size: 46px; }
 
 .np-volume { display: flex; align-items: center; gap: 11px; width: 100%; margin-top: 22px; }
-.np-volume .vol-icon { font-size: 12px; color: rgba(255, 255, 255, 0.45); flex-shrink: 0; }
+.np-volume .vol-icon { font-size: 14px; color: rgba(255, 255, 255, 0.45); flex-shrink: 0; }
 .np-volume .np-slider { flex: 1; }
 .np-volume input[type=range] { height: 5px; }
 
-/* Bottom icon row (lyrics / AirPlay / queue) */
+/* Bottom icon row */
 .np-bottom { display: flex; align-items: center; justify-content: space-around; width: 100%; margin-top: 20px; }
-.np-bottom button { font-size: 19px; color: rgba(255, 255, 255, 0.75); padding: 8px 18px; border-radius: 10px; }
-.np-bottom button.on { background: rgba(255, 255, 255, 0.22); color: #fff; }
+.np-bottom button {
+  font-size: 19px; color: rgba(255, 255, 255, 0.75);
+  padding: 9px 18px; border-radius: 11px; display: flex;
+  transition: background 0.2s, color 0.2s, transform 0.16s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.np-bottom button:active { transform: scale(0.9); }
+.np-bottom button.on { background: rgba(255, 255, 255, 0.2); color: #fff; }
 
-/* Queue panel, revealed by the queue button. */
+/* Queue panel */
 .np-queue {
   position: absolute; left: 0; right: 0; bottom: 0;
   max-height: 62%; overflow-y: auto;
-  background: rgba(20, 20, 22, 0.96);
-  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-  border-radius: 16px 16px 0 0;
+  border-radius: 20px 20px 0 0;
   padding: 14px 20px calc(20px + var(--safe-bottom));
+  touch-action: pan-y;
 }
 .np-queue-title { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
 
 [hidden] { display: none !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; }
+}

@@ -17,10 +17,106 @@
 </head>
 <body>
 
+<!--
+  SF Symbols-style icon sprite. Every glyph is drawn on a 24x24 grid and uses
+  currentColor, so a button's colour drives its icon. Solid glyphs are stroked
+  in the colour they are filled with, which is what rounds their corners the
+  way Apple's transport controls are rounded.
+-->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+
+  <symbol id="i-play" viewBox="0 0 24 24">
+    <path d="M7.5 4.8 19 12 7.5 19.2Z" fill="currentColor" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24">
+    <rect x="6" y="4.2" width="4.3" height="15.6" rx="1.9" fill="currentColor"/>
+    <rect x="13.7" y="4.2" width="4.3" height="15.6" rx="1.9" fill="currentColor"/>
+  </symbol>
+  <symbol id="i-backward" viewBox="0 0 24 24">
+    <path d="M10.8 6 3.6 12l7.2 6Z" fill="currentColor" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>
+    <path d="M20.4 6 13.2 12l7.2 6Z" fill="currentColor" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="i-forward" viewBox="0 0 24 24">
+    <path d="M3.6 6 10.8 12l-7.2 6Z" fill="currentColor" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>
+    <path d="M13.2 6 20.4 12l-7.2 6Z" fill="currentColor" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>
+  </symbol>
+
+  <symbol id="i-star" viewBox="0 0 24 24">
+    <path d="M12 2.6l2.9 5.9 6.5.95-4.7 4.58 1.11 6.47L12 17.44 6.19 20.5l1.11-6.47L2.6 9.45l6.5-.95z"
+          fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="i-ellipsis" viewBox="0 0 24 24">
+    <circle cx="5.2" cy="12" r="1.95" fill="currentColor"/>
+    <circle cx="12" cy="12" r="1.95" fill="currentColor"/>
+    <circle cx="18.8" cy="12" r="1.95" fill="currentColor"/>
+  </symbol>
+
+  <symbol id="i-speaker-low" viewBox="0 0 24 24">
+    <path d="M12 4.6 6.9 9.1H3.4v5.8h3.5L12 19.4Z" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="i-speaker-high" viewBox="0 0 24 24">
+    <path d="M10.5 4.6 5.4 9.1H1.9v5.8h3.5l5.1 4.5Z" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+    <path d="M14.4 9.1a4.1 4.1 0 0 1 0 5.8" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+    <path d="M17.3 6.2a8.2 8.2 0 0 1 0 11.6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+  </symbol>
+
+  <symbol id="i-shuffle" viewBox="0 0 24 24">
+    <path d="M2.6 6.6H6c3 0 4.4 10.8 7.6 10.8h4.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <path d="M2.6 17.4H6c1.7 0 2.8-3.4 3.9-6.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <path d="M13.2 6.6h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <path d="m16.4 3.7 3 2.9-3 2.9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="m16.4 14.5 3 2.9-3 2.9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="i-repeat" viewBox="0 0 24 24">
+    <path d="M6.8 6.2h10.4a4.3 4.3 0 0 1 4.3 4.3v.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <path d="m17.4 2.9 3.3 3.3-3.3 3.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M17.2 17.8H6.8a4.3 4.3 0 0 1-4.3-4.3v-.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <path d="m6.6 21.1-3.3-3.3 3.3-3.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="i-queue" viewBox="0 0 24 24">
+    <circle cx="3.6" cy="6.4" r="1.5" fill="currentColor"/>
+    <circle cx="3.6" cy="12" r="1.5" fill="currentColor"/>
+    <circle cx="3.6" cy="17.6" r="1.5" fill="currentColor"/>
+    <path d="M8.4 6.4h12M8.4 12h12M8.4 17.6h12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  </symbol>
+
+  <symbol id="i-home" viewBox="0 0 24 24">
+    <path d="M3.2 10.4 12 3.2l8.8 7.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M5.6 9.2V19a1.6 1.6 0 0 0 1.6 1.6h9.6a1.6 1.6 0 0 0 1.6-1.6V9.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="i-library" viewBox="0 0 24 24">
+    <rect x="2.8" y="2.8" width="18.4" height="18.4" rx="4.6" fill="none" stroke="currentColor" stroke-width="2"/>
+    <path d="M10.2 16.4V8.1l6-1.3v8.2" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="8.6" cy="16.4" r="1.9" fill="currentColor"/>
+    <circle cx="14.6" cy="15" r="1.9" fill="currentColor"/>
+  </symbol>
+  <symbol id="i-search" viewBox="0 0 24 24">
+    <circle cx="10.6" cy="10.6" r="7" fill="none" stroke="currentColor" stroke-width="2"/>
+    <path d="m15.8 15.8 4.8 4.8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+  </symbol>
+
+  <symbol id="i-chevron-left" viewBox="0 0 24 24">
+    <path d="M15 3.8 6.8 12 15 20.2" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="i-chevron-right" viewBox="0 0 24 24">
+    <path d="M9 3.8 17.2 12 9 20.2" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="i-power" viewBox="0 0 24 24">
+    <path d="M12 2.8v8.4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M18 6.3a8.4 8.4 0 1 1-12 0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="i-note" viewBox="0 0 24 24">
+    <path d="M9 18V5.4l10-2.1V16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="6.6" cy="18" r="2.7" fill="currentColor"/>
+    <circle cx="16.6" cy="16" r="2.7" fill="currentColor"/>
+  </symbol>
+
+</defs></svg>
+
 <!-- ===== Login screen ===== -->
 <section id="login-screen" class="screen login-screen">
   <div class="login-card">
-    <div class="login-logo">♫</div>
+    <svg class="ic login-logo"><use href="#i-note"></use></svg>
     <h1>Music</h1>
     <p class="login-sub">Sign in to your Navidrome server</p>
     <form id="login-form">
@@ -47,7 +143,9 @@
 
   <header class="topbar">
     <div class="topbar-title" id="topbar-title">Home</div>
-    <button class="round-btn" id="logout-btn" aria-label="Sign out">⏻</button>
+    <button class="round-btn glass" id="logout-btn" aria-label="Sign out">
+      <svg class="ic"><use href="#i-power"></use></svg>
+    </button>
   </header>
 
   <main id="views" class="views">
@@ -60,7 +158,7 @@
 
     <section id="view-search" class="view" hidden>
       <div class="search-bar">
-        <input id="search-input" type="search" placeholder="Artists, Songs, Lyrics, and More" autocapitalize="off" spellcheck="false" />
+        <input id="search-input" type="search" placeholder="Artists, Songs, Albums" autocapitalize="off" spellcheck="false" />
       </div>
       <div id="search-results"></div>
     </section>
@@ -76,24 +174,24 @@
 
     <section id="view-album" class="view" hidden>
       <div class="detail-head-row">
-        <button class="round-btn" data-back aria-label="Back">‹</button>
-        <button class="round-btn" aria-label="More">···</button>
+        <button class="round-btn glass" data-back aria-label="Back"><svg class="ic"><use href="#i-chevron-left"></use></svg></button>
+        <button class="round-btn glass" aria-label="More"><svg class="ic"><use href="#i-ellipsis"></use></svg></button>
       </div>
       <div id="album-detail"></div>
     </section>
 
     <section id="view-artist" class="view" hidden>
       <div class="detail-head-row">
-        <button class="round-btn" data-back aria-label="Back">‹</button>
-        <button class="round-btn" aria-label="More">···</button>
+        <button class="round-btn glass" data-back aria-label="Back"><svg class="ic"><use href="#i-chevron-left"></use></svg></button>
+        <button class="round-btn glass" aria-label="More"><svg class="ic"><use href="#i-ellipsis"></use></svg></button>
       </div>
       <div id="artist-detail"></div>
     </section>
 
     <section id="view-playlist" class="view" hidden>
       <div class="detail-head-row">
-        <button class="round-btn" data-back aria-label="Back">‹</button>
-        <button class="round-btn" aria-label="More">···</button>
+        <button class="round-btn glass" data-back aria-label="Back"><svg class="ic"><use href="#i-chevron-left"></use></svg></button>
+        <button class="round-btn glass" aria-label="More"><svg class="ic"><use href="#i-ellipsis"></use></svg></button>
       </div>
       <div id="playlist-detail"></div>
     </section>
@@ -101,26 +199,30 @@
   </main>
 
   <!-- Mini player -->
-  <div id="mini-player" class="mini-player" hidden>
+  <div id="mini-player" class="mini-player glass" hidden>
     <img id="mini-cover" class="mini-cover" alt="" />
     <div class="mini-meta">
       <div id="mini-title" class="mini-title"></div>
       <div id="mini-artist" class="mini-artist"></div>
     </div>
-    <button class="mini-btn" id="mini-playpause" aria-label="Play or pause">►</button>
-    <button class="mini-btn" id="mini-next" aria-label="Next track">►►</button>
+    <button class="mini-btn" id="mini-playpause" aria-label="Play or pause">
+      <svg class="ic"><use href="#i-play"></use></svg>
+    </button>
+    <button class="mini-btn" id="mini-next" aria-label="Next track">
+      <svg class="ic"><use href="#i-forward"></use></svg>
+    </button>
   </div>
 
   <!-- Tab bar -->
-  <nav class="tabbar">
+  <nav class="tabbar glass">
     <button class="tab-btn active" data-view="home">
-      <span class="tab-icon">⌂</span><span>Home</span>
+      <svg class="ic tab-icon"><use href="#i-home"></use></svg><span>Home</span>
     </button>
     <button class="tab-btn" data-view="library">
-      <span class="tab-icon">▤</span><span>Library</span>
+      <svg class="ic tab-icon"><use href="#i-library"></use></svg><span>Library</span>
     </button>
     <button class="tab-btn" data-view="search">
-      <span class="tab-icon">⌕</span><span>Search</span>
+      <svg class="ic tab-icon"><use href="#i-search"></use></svg><span>Search</span>
     </button>
   </nav>
 
@@ -138,12 +240,16 @@
         <div id="np-artist" class="np-artist"></div>
       </div>
       <div class="np-meta-btns">
-        <button class="round-btn" id="np-star" aria-label="Favorite">★</button>
-        <button class="round-btn" aria-label="More">···</button>
+        <button class="round-btn glass" id="np-star" aria-label="Favourite">
+          <svg class="ic"><use href="#i-star"></use></svg>
+        </button>
+        <button class="round-btn glass" aria-label="More">
+          <svg class="ic"><use href="#i-ellipsis"></use></svg>
+        </button>
       </div>
     </div>
 
-    <div class="np-slider np-progress">
+    <div class="np-slider np-progress" id="np-progress">
       <input id="np-seek" type="range" min="0" max="1000" value="0" step="1" aria-label="Seek" />
       <div class="np-times">
         <span id="np-time-cur">0:00</span>
@@ -152,26 +258,32 @@
     </div>
 
     <div class="np-controls">
-      <button class="np-ctrl-btn" id="np-prev" aria-label="Previous">◄◄</button>
-      <button class="np-ctrl-btn np-play" id="np-playpause" aria-label="Play or pause">►</button>
-      <button class="np-ctrl-btn" id="np-next" aria-label="Next">►►</button>
+      <button class="np-ctrl-btn" id="np-prev" aria-label="Previous">
+        <svg class="ic"><use href="#i-backward"></use></svg>
+      </button>
+      <button class="np-ctrl-btn np-play" id="np-playpause" aria-label="Play or pause">
+        <svg class="ic"><use href="#i-play"></use></svg>
+      </button>
+      <button class="np-ctrl-btn" id="np-next" aria-label="Next">
+        <svg class="ic"><use href="#i-forward"></use></svg>
+      </button>
     </div>
 
     <div class="np-volume">
-      <span class="vol-icon">🔈</span>
-      <div class="np-slider">
+      <svg class="ic vol-icon"><use href="#i-speaker-low"></use></svg>
+      <div class="np-slider" id="np-vol-wrap">
         <input id="np-vol" type="range" min="0" max="100" value="100" aria-label="Volume" />
       </div>
-      <span class="vol-icon">🔊</span>
+      <svg class="ic vol-icon"><use href="#i-speaker-high"></use></svg>
     </div>
 
     <div class="np-bottom">
-      <button id="np-shuffle" aria-label="Shuffle">⤨</button>
-      <button id="np-repeat" aria-label="Repeat">⟳</button>
-      <button id="np-queue-btn" aria-label="Queue">☰</button>
+      <button id="np-shuffle" aria-label="Shuffle"><svg class="ic"><use href="#i-shuffle"></use></svg></button>
+      <button id="np-repeat" aria-label="Repeat"><svg class="ic"><use href="#i-repeat"></use></svg></button>
+      <button id="np-queue-btn" aria-label="Queue"><svg class="ic"><use href="#i-queue"></use></svg></button>
     </div>
 
-    <div class="np-queue" id="np-queue" hidden>
+    <div class="np-queue glass" id="np-queue" hidden>
       <div class="np-queue-title">Playing Next</div>
       <div id="np-queue-list"></div>
     </div>

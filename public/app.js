@@ -77,6 +77,16 @@
       { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
     ));
   }
+  // Markup for one sprite glyph; `name` is an id in the sprite minus the "i-".
+  function icon(name, cls) {
+    return `<svg class="ic${cls ? ' ' + cls : ''}"><use href="#i-${name}"></use></svg>`;
+  }
+  // Swap the glyph inside an existing button without rebuilding it.
+  function setIcon(btn, name) {
+    const use = btn.querySelector('use');
+    if (use) use.setAttribute('href', '#i-' + name);
+  }
+
   // OpenSubsonic exposes explicitStatus; render the badge only when the server
   // actually reports it rather than guessing.
   function explicitBadge(item) {
@@ -204,8 +214,9 @@
     },
     updatePlayIcons() {
       const playing = !audio.paused && !audio.ended;
-      document.getElementById('mini-playpause').textContent = playing ? '❚❚' : '►';
-      document.getElementById('np-playpause').textContent = playing ? '❚❚' : '►';
+      setIcon(document.getElementById('mini-playpause'), playing ? 'pause' : 'play');
+      setIcon(document.getElementById('np-playpause'), playing ? 'pause' : 'play');
+      document.getElementById('now-playing').classList.toggle('paused', !playing);
     },
     updateMediaSession() {
       if (!('mediaSession' in navigator)) return;
@@ -299,7 +310,7 @@
         <div class="row-title">${esc(song.title)}${explicitBadge(song)}</div>
         <div class="row-sub">${esc(song.artist || '')}</div>
       </div>
-      <button class="row-more" aria-label="More">···</button>`;
+      <button class="row-more" aria-label="More">${icon('ellipsis')}</button>`;
     row.addEventListener('click', (e) => {
       if (e.target.closest('.row-more')) return;
       Player.playQueue(list, idx);
@@ -326,7 +337,7 @@
         <div class="row-title">${esc(artist.name)}</div>
         <div class="row-sub">${artist.albumCount || 0} albums</div>
       </div>
-      <button class="row-more" aria-label="More">›</button>`;
+      <button class="row-more" aria-label="Open">${icon('chevron-right')}</button>`;
     row.addEventListener('click', () => Views.openArtist(artist.id));
     return row;
   }
@@ -339,7 +350,7 @@
         <div class="row-title">${esc(pl.name)}</div>
         <div class="row-sub">${pl.songCount || 0} songs</div>
       </div>
-      <button class="row-more" aria-label="More">›</button>`;
+      <button class="row-more" aria-label="Open">${icon('chevron-right')}</button>`;
     row.addEventListener('click', () => Views.openPlaylist(pl.id));
     return row;
   }
@@ -348,8 +359,8 @@
   function actionRow(getSongs) {
     const row = el('div', 'action-row');
     row.innerHTML = `
-      <button class="action-btn" data-act="play">► Play</button>
-      <button class="action-btn" data-act="shuffle">⤨ Shuffle</button>`;
+      <button class="action-btn" data-act="play">${icon('play')} Play</button>
+      <button class="action-btn" data-act="shuffle">${icon('shuffle')} Shuffle</button>`;
     row.querySelector('[data-act=play]').addEventListener('click', () => {
       const s = getSongs();
       if (s.length) Player.playQueue(s, 0, { shuffle: false });
@@ -555,9 +566,47 @@
   });
   function closeNP() {
     npSheet.classList.remove('open');
-    setTimeout(() => { npSheet.hidden = true; }, 420);
+    setTimeout(() => { npSheet.hidden = true; }, 440);
   }
   document.getElementById('np-collapse').addEventListener('click', closeNP);
+
+  // Swipe down to dismiss. The sheet tracks the finger 1:1, resists upward
+  // drags, and flicks away on either distance or velocity so a short fast
+  // swipe closes it just like a slow long one.
+  let dragFrom = null, dragLastY = 0, dragLastT = 0, dragVel = 0;
+  npSheet.addEventListener('pointerdown', (e) => {
+    // Controls and the scrollable queue keep their own gestures.
+    if (e.target.closest('button, input[type=range], .np-queue')) return;
+    dragFrom = e.clientY;
+    dragLastY = e.clientY;
+    dragLastT = e.timeStamp;
+    dragVel = 0;
+    npSheet.classList.add('dragging');
+    npSheet.setPointerCapture(e.pointerId);
+  });
+  npSheet.addEventListener('pointermove', (e) => {
+    if (dragFrom === null) return;
+    // Rubber-band anything above the resting position instead of lifting off.
+    const raw = e.clientY - dragFrom;
+    const dy = raw < 0 ? raw / 6 : raw;
+    const dt = e.timeStamp - dragLastT;
+    if (dt > 0) {
+      dragVel = (e.clientY - dragLastY) / dt; // px per ms
+      dragLastY = e.clientY;
+      dragLastT = e.timeStamp;
+    }
+    npSheet.style.transform = `translateY(${dy}px)`;
+  });
+  function endDrag(e) {
+    if (dragFrom === null) return;
+    const dy = e.clientY - dragFrom;
+    dragFrom = null;
+    npSheet.classList.remove('dragging');
+    npSheet.style.transform = '';
+    if (dy > 110 || dragVel > 0.55) closeNP();
+  }
+  npSheet.addEventListener('pointerup', endDrag);
+  npSheet.addEventListener('pointercancel', endDrag);
 
   document.getElementById('mini-playpause').addEventListener('click', () => Player.toggle());
   document.getElementById('mini-next').addEventListener('click', () => Player.next());
@@ -590,20 +639,32 @@
   });
 
   const seekEl = document.getElementById('np-seek');
+  const seekWrap = document.getElementById('np-progress');
   ['pointerdown', 'touchstart'].forEach((ev) =>
-    seekEl.addEventListener(ev, () => { seekEl.dataset.dragging = '1'; }));
-  ['pointerup', 'touchend', 'change'].forEach((ev) =>
-    seekEl.addEventListener(ev, () => { delete seekEl.dataset.dragging; }));
+    seekEl.addEventListener(ev, () => {
+      seekEl.dataset.dragging = '1';
+      seekWrap.classList.add('scrubbing');
+    }));
+  ['pointerup', 'pointercancel', 'touchend', 'change'].forEach((ev) =>
+    seekEl.addEventListener(ev, () => {
+      delete seekEl.dataset.dragging;
+      seekWrap.classList.remove('scrubbing');
+    }));
   seekEl.addEventListener('input', (e) => {
     paintSlider(e.target);
     if (audio.duration) audio.currentTime = (e.target.value / 1000) * audio.duration;
   });
 
   const volEl = document.getElementById('np-vol');
+  const volWrap = document.getElementById('np-vol-wrap');
   volEl.addEventListener('input', (e) => {
     paintSlider(e.target);
     audio.volume = e.target.value / 100;
   });
+  ['pointerdown', 'touchstart'].forEach((ev) =>
+    volEl.addEventListener(ev, () => volWrap.classList.add('scrubbing')));
+  ['pointerup', 'pointercancel', 'touchend'].forEach((ev) =>
+    volEl.addEventListener(ev, () => volWrap.classList.remove('scrubbing')));
   paintSlider(volEl);
 
   // ---------- Login ----------
