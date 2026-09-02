@@ -11,7 +11,8 @@ front-end that talks to Navidrome over the standard Subsonic API, so the server 
 
 ## Features
 
-- Home, New, Radio, Library and Search with a sliding liquid-glass tab pill
+- CarPlay-style dock: Home, Radio, Library in a glass pill, Search as a separate circle
+- Keep Offline / Remove Download — songs saved on-device and listed under Library → Downloaded
 - Library playlists include a live **Starred** list (`getStarred2`) — starring a song adds it there
 - Create playlists and add songs from the ⋯ action sheet
 - Album and playlist detail pages with Play and Shuffle
