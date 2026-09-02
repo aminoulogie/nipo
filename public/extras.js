@@ -1,0 +1,288 @@
+(() => {
+  'use strict';
+
+  const API_VERSION = '1.16.1';
+  const CLIENT_ID = 'navpwa';
+
+  function auth() {
+    try { return JSON.parse(localStorage.getItem('nd-auth') || 'null') || {}; }
+    catch { return {}; }
+  }
+  function apiUrl(endpoint, params = {}) {
+    const a = auth();
+    const q = new URLSearchParams({
+      u: a.username || '', t: a.token || '', s: a.salt || '',
+      v: API_VERSION, c: CLIENT_ID, f: 'json', ...params,
+    });
+    return `${(a.server || '').replace(/\/$/, '')}/rest/${endpoint}?${q}`;
+  }
+  async function api(endpoint, params = {}) {
+    const res = await fetch(apiUrl(endpoint, params));
+    const data = await res.json();
+    const body = data['subsonic-response'];
+    if (!body || body.status !== 'ok') throw new Error((body && body.error && body.error.message) || 'Request failed');
+    return body;
+  }
+  function cover(id, size) {
+    return id ? apiUrl('getCoverArt', { id, size: size || 100 }) : '';
+  }
+  function esc(s) {
+    return (s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+  function icon(name) {
+    return `<svg class="ic"><use href="#i-${name}"></use></svg>`;
+  }
+  function el(tag, cls, html) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (html !== undefined) e.innerHTML = html;
+    return e;
+  }
+
+  function moveTabPill() {
+    const bar = document.getElementById('tabbar');
+    const pill = document.getElementById('tab-pill');
+    if (!bar || !pill) return;
+    const active = bar.querySelector('.tab-btn.active');
+    if (!active) return;
+    const br = bar.getBoundingClientRect();
+    const ar = active.getBoundingClientRect();
+    pill.style.width = ar.width + 'px';
+    pill.style.transform = `translateX(${ar.left - br.left - 6}px)`;
+  }
+
+  function songRow(song, list, idx) {
+    const row = el('div', 'list-row');
+    row.dataset.songId = song.id;
+    row.innerHTML = `
+      <span class="row-star">${song.starred ? '★' : ''}</span>
+      <img class="card-cover" loading="lazy" src="${cover(song.coverArt || song.id, 100)}" alt="" />
+      <div class="row-main">
+        <div class="row-title">${esc(song.title)}</div>
+        <div class="row-sub">${esc(song.artist || '')}</div>
+      </div>
+      <button class="row-more" aria-label="More">${icon('ellipsis')}</button>`;
+    row.addEventListener('click', (e) => {
+      if (e.target.closest('.row-more')) { openSongSheet(song); return; }
+      const audio = document.getElementById('audio');
+      if (audio) {
+        audio.src = apiUrl('stream', { id: song.id });
+        audio.play().catch(() => {});
+      }
+    });
+    return row;
+  }
+
+  function albumCard(album) {
+    const card = el('div', 'card');
+    card.innerHTML = `
+      <img class="card-cover" loading="lazy" src="${cover(album.coverArt || album.id, 320)}" alt="" />
+      <div class="card-title">${esc(album.name || album.title)}</div>
+      <div class="card-sub">${esc(album.artist || '')}</div>`;
+    return card;
+  }
+
+  async function fillNew() {
+    const wrap = document.getElementById('new-content');
+    if (!wrap) return;
+    wrap.innerHTML = '<div class="empty-state">Loading…</div>';
+    try {
+      const data = await api('getAlbumList2', { type: 'newest', size: 40 });
+      const albums = (data.albumList2 && data.albumList2.album) || [];
+      wrap.innerHTML = '';
+      wrap.appendChild(el('div', 'section-title', 'Recently Added'));
+      const grid = el('div', 'grid');
+      albums.forEach((a) => grid.appendChild(albumCard(a)));
+      wrap.appendChild(grid);
+      if (!albums.length) wrap.innerHTML = '<div class="empty-state">Nothing new yet</div>';
+    } catch {
+      wrap.innerHTML = '<div class="empty-state">Could not load new albums</div>';
+    }
+  }
+
+  async function fillRadio() {
+    const wrap = document.getElementById('radio-content');
+    if (!wrap) return;
+    wrap.innerHTML = '<div class="empty-state">Loading…</div>';
+    try {
+      const data = await api('getRandomSongs', { size: 40 });
+      const songs = (data.randomSongs && data.randomSongs.song) || [];
+      wrap.innerHTML = '';
+      wrap.appendChild(el('div', 'section-title', 'Station Mix'));
+      const list = el('div', 'song-list');
+      songs.forEach((s, i) => list.appendChild(songRow(s, songs, i)));
+      wrap.appendChild(list);
+      if (!songs.length) wrap.innerHTML = '<div class="empty-state">No songs for radio</div>';
+    } catch {
+      wrap.innerHTML = '<div class="empty-state">Could not load radio</div>';
+    }
+  }
+
+  async function injectLibraryExtras() {
+    const content = document.getElementById('library-content');
+    if (!content) return;
+    const playlistsTab = document.querySelector('#library-tabs .seg-btn[data-lib="playlists"]');
+    if (!playlistsTab || !playlistsTab.classList.contains('active')) return;
+    if (content.querySelector('.starred-art')) return;
+    let starredCount = 0;
+    try {
+      const data = await api('getStarred2');
+      starredCount = ((data.starred2 && data.starred2.song) || []).length;
+    } catch { /* ignore */ }
+    const create = el('button', 'create-row');
+    create.innerHTML = `${icon('plus')} New Playlist`;
+    create.addEventListener('click', openCreateSheet);
+    const starred = el('div', 'list-row');
+    starred.innerHTML = `
+      <div class="starred-art">${icon('star')}</div>
+      <div class="row-main">
+        <div class="row-title">Starred</div>
+        <div class="row-sub">${starredCount} songs</div>
+      </div>
+      <button class="row-more" aria-label="Open">${icon('chevron-right')}</button>`;
+    starred.addEventListener('click', openStarred);
+    content.insertBefore(starred, content.firstChild);
+    content.insertBefore(create, content.firstChild);
+  }
+
+  async function openStarred() {
+    const wrap = document.getElementById('playlist-detail');
+    const view = document.getElementById('view-playlist');
+    if (!wrap || !view) return;
+    document.querySelectorAll('.view').forEach((v) => { v.hidden = true; });
+    view.hidden = false;
+    wrap.innerHTML = '<div class="empty-state">Loading…</div>';
+    try {
+      const data = await api('getStarred2');
+      const songs = (data.starred2 && data.starred2.song) || [];
+      wrap.innerHTML = '';
+      const header = el('div', 'detail-header');
+      header.innerHTML = `
+        <div class="starred-art" style="width:140px;height:140px;margin:0 auto;border-radius:16px;font-size:56px">${icon('star')}</div>
+        <div class="detail-title">Starred</div>
+        <div class="detail-meta">${songs.length} songs</div>`;
+      wrap.appendChild(header);
+      const list = el('div', 'song-list');
+      songs.forEach((s, i) => list.appendChild(songRow(s, songs, i)));
+      wrap.appendChild(list);
+      if (!songs.length) list.appendChild(el('div', 'empty-state', 'Star a song to see it here'));
+    } catch {
+      wrap.innerHTML = '<div class="empty-state">Could not load starred</div>';
+    }
+  }
+
+  const overlay = document.getElementById('sheet-overlay');
+  const actionSheet = document.getElementById('action-sheet');
+  const actionBody = document.getElementById('action-sheet-body');
+  const createSheet = document.getElementById('create-sheet');
+  let pendingSong = null;
+
+  function closeSheets() {
+    if (!overlay) return;
+    overlay.classList.remove('open');
+    if (actionSheet) actionSheet.classList.remove('open');
+    if (createSheet) createSheet.classList.remove('open');
+    setTimeout(() => {
+      overlay.hidden = true;
+      if (actionSheet) actionSheet.hidden = true;
+      if (createSheet) createSheet.hidden = true;
+    }, 280);
+  }
+  function showOverlay() {
+    overlay.hidden = false;
+    requestAnimationFrame(() => overlay.classList.add('open'));
+  }
+  if (overlay) overlay.addEventListener('click', closeSheets);
+
+  function openSongSheet(song) {
+    if (!actionSheet || !actionBody) return;
+    actionBody.innerHTML = '';
+    const add = (label, ic, fn) => {
+      const b = el('button', 'sheet-item');
+      b.innerHTML = `${icon(ic)} ${esc(label)}`;
+      b.addEventListener('click', async () => { closeSheets(); await fn(); });
+      actionBody.appendChild(b);
+    };
+    add(song.starred ? 'Unstar' : 'Star', 'star', async () => {
+      await api(song.starred ? 'unstar' : 'star', { id: song.id });
+      song.starred = song.starred ? undefined : new Date().toISOString();
+      const starBtn = document.getElementById('np-star');
+      if (starBtn) starBtn.classList.toggle('on', !!song.starred);
+    });
+    add('Add to Playlist', 'list-plus', () => openAddToPlaylist(song));
+    actionSheet.hidden = false;
+    showOverlay();
+    requestAnimationFrame(() => actionSheet.classList.add('open'));
+  }
+
+  async function openAddToPlaylist(song) {
+    actionBody.innerHTML = '';
+    const add = (label, ic, fn) => {
+      const b = el('button', 'sheet-item');
+      b.innerHTML = `${icon(ic)} ${esc(label)}`;
+      b.addEventListener('click', async () => { closeSheets(); await fn(); });
+      actionBody.appendChild(b);
+    };
+    add('New Playlist', 'plus', async () => { pendingSong = song; openCreateSheet(); });
+    try {
+      const data = await api('getPlaylists');
+      ((data.playlists && data.playlists.playlist) || []).forEach((p) => {
+        add(p.name, 'note', () => api('updatePlaylist', { playlistId: p.id, songIdToAdd: song.id }));
+      });
+    } catch { /* ignore */ }
+    actionSheet.hidden = false;
+    showOverlay();
+    requestAnimationFrame(() => actionSheet.classList.add('open'));
+  }
+
+  function openCreateSheet() {
+    if (!createSheet) return;
+    createSheet.hidden = false;
+    overlay.hidden = false;
+    const input = document.getElementById('create-name');
+    if (input) input.value = '';
+    requestAnimationFrame(() => {
+      overlay.classList.add('open');
+      createSheet.classList.add('open');
+      if (input) input.focus();
+    });
+  }
+
+  const createBtn = document.getElementById('create-playlist-btn');
+  if (createBtn) createBtn.addEventListener('click', openCreateSheet);
+  const cancel = document.getElementById('create-cancel');
+  if (cancel) cancel.addEventListener('click', () => { pendingSong = null; closeSheets(); });
+  const confirmBtn = document.getElementById('create-confirm');
+  if (confirmBtn) confirmBtn.addEventListener('click', async () => {
+    const name = (document.getElementById('create-name').value || '').trim();
+    if (!name) return;
+    const params = { name };
+    if (pendingSong) params.songId = pendingSong.id;
+    try {
+      await api('createPlaylist', params);
+      pendingSong = null;
+      closeSheets();
+    } catch (err) {
+      document.getElementById('create-name').placeholder = err.message || 'Could not create';
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.tab-btn');
+    if (!btn) return;
+    setTimeout(() => {
+      moveTabPill();
+      const name = btn.dataset.view;
+      if (name === 'new') fillNew();
+      if (name === 'radio') fillRadio();
+      if (name === 'library') setTimeout(injectLibraryExtras, 400);
+    }, 30);
+  });
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('#library-tabs .seg-btn')) setTimeout(injectLibraryExtras, 400);
+  });
+
+  window.addEventListener('resize', moveTabPill);
+  requestAnimationFrame(moveTabPill);
+  setTimeout(moveTabPill, 250);
+})();
