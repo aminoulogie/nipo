@@ -11,9 +11,11 @@ front-end that talks to Navidrome over the standard Subsonic API, so the server 
 
 ## Features
 
-- Home, Library (albums / artists / playlists) and Search
+- Home, New, Radio, Library and Search with a sliding liquid-glass tab pill
+- Library playlists include a live **Starred** list (`getStarred2`) — starring a song adds it there
+- Create playlists and add songs from the ⋯ action sheet
 - Album and playlist detail pages with Play and Shuffle
-- Floating mini-player that expands into a full Now Playing sheet
+- Floating glass mini-player that expands into a full Now Playing sheet
 - Background tint derived from the current track's artwork
 - Queue view, shuffle, repeat, favourite (star), seek and volume
 - iOS `MediaSession` integration: lock screen, Control Center, headphone buttons
