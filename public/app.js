@@ -586,6 +586,11 @@
     showView(name) {
       document.querySelectorAll('.view').forEach((v) => (v.hidden = true));
       document.getElementById('view-' + name).hidden = false;
+      // Detail screens carry their own back / "..." row, so the big section
+      // title does not belong there — it was still reading "Home" while an
+      // album was open.
+      const isDetail = !TITLES[name];
+      document.getElementById('app').classList.toggle('in-detail', isDetail);
     },
     push(name) { this.stack.push(name); this.showView(name); },
     back() {

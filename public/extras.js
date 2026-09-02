@@ -140,6 +140,23 @@
     pill.style.transform = `translateX(${ar.left - br.left - pad}px)`;
   }
 
+  // The pill was only repositioned on tap, so a rotation or any relayout left
+  // it sitting under the wrong tab. Re-measure on load and on resize, without
+  // the move transition so it does not visibly slide during a rotate.
+  function repositionPillNow() {
+    const pill = document.getElementById('tab-pill');
+    if (!pill) return;
+    const prev = pill.style.transition;
+    pill.style.transition = 'none';
+    moveTabPill();
+    // Restore on the next frame so later tab changes animate again.
+    requestAnimationFrame(() => { pill.style.transition = prev; });
+  }
+  window.addEventListener('resize', repositionPillNow);
+  window.addEventListener('orientationchange', repositionPillNow);
+  if (document.readyState === 'complete') repositionPillNow();
+  else window.addEventListener('load', repositionPillNow);
+
   function songRow(song) {
     const row = el('div', 'list-row');
     row.dataset.songId = song.id;

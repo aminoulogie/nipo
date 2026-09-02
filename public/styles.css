@@ -133,73 +133,150 @@ input::placeholder { color: var(--text-dim); }
   padding-bottom: calc(var(--tabbar-h) + var(--miniplayer-h) + var(--safe-bottom) + 36px);
 }
 
-.section { margin-bottom: 28px; }
-.section-title { font-size: 21px; font-weight: 700; letter-spacing: -0.5px; margin: 6px 0 12px; }
+/* ===================================================================
+   LISTS, CARDS AND DETAIL HEADERS
+   Same discipline as Now Playing: spacing in steps of 4, type on the
+   iOS ramp (11 / 12 / 13 / 15 / 17 / 20 / 22 / 28).
+   =================================================================== */
+.section { margin-bottom: 32px; }
+.section-title {
+  font-size: 22px; font-weight: 700; letter-spacing: -0.5px;
+  margin: 0 0 12px;
+}
 .carousel {
-  display: flex; gap: 14px; overflow-x: auto; padding-bottom: 4px;
+  display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px;
   scrollbar-width: none; scroll-snap-type: x proximity;
+  /* Bleed to the screen edge so cards run off rather than stopping short. */
+  margin: 0 -18px; padding-left: 18px; padding-right: 18px;
 }
 .carousel::-webkit-scrollbar { display: none; }
 
-.card { flex: 0 0 154px; scroll-snap-align: start; }
+.card { flex: 0 0 150px; scroll-snap-align: start; }
 .card-cover {
-  width: 154px; height: 154px; border-radius: 8px; object-fit: cover;
-  background: var(--surface); display: block;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  width: 150px; height: 150px; border-radius: 8px; object-fit: cover;
+  background: rgba(255, 255, 255, 0.06); display: block;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
 }
-.card-title { font-size: 13.5px; font-weight: 500; margin-top: 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.card-sub { font-size: 13px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-title {
+  font-size: 14px; font-weight: 500; letter-spacing: -0.1px; line-height: 1.3;
+  margin-top: 8px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.card-sub {
+  font-size: 14px; font-weight: 400; line-height: 1.3;
+  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 
-.grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px 14px; margin-top: 10px; }
+.grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px 14px; margin-top: 4px; }
 .grid .card { flex: none; width: 100%; }
 .grid .card-cover { width: 100%; height: auto; aspect-ratio: 1/1; }
 
-.list-row { display: flex; align-items: center; gap: 11px; padding: 8px 0; position: relative; }
+/* --- Rows --- */
+.list-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px 0; position: relative;
+  border-radius: 8px;
+  transition: background 0.18s ease;
+}
 .list-row::after {
-  content: ''; position: absolute; left: 57px; right: 0; bottom: 0;
-  height: 1px; background: var(--separator);
+  content: ''; position: absolute; left: 58px; right: 0; bottom: 0;
+  height: 1px; background: rgba(255, 255, 255, 0.08);
 }
 .list-row:last-child::after { display: none; }
-.list-row .row-star { color: var(--accent); font-size: 11px; width: 9px; flex-shrink: 0; }
-.list-row .card-cover { width: 46px; height: 46px; border-radius: 4px; flex-shrink: 0; box-shadow: 0 2px 7px rgba(0, 0, 0, 0.4); }
+.list-row:active { background: rgba(255, 255, 255, 0.05); }
+.list-row .row-star { color: var(--accent); font-size: 11px; width: 10px; flex-shrink: 0; }
+.list-row .card-cover {
+  width: 46px; height: 46px; border-radius: 5px; flex-shrink: 0;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.35);
+}
 .list-row .row-main { flex: 1; min-width: 0; }
-.list-row .row-title { font-size: 15.5px; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.list-row .row-sub { font-size: 14px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
-.list-row .row-more { color: var(--text-dim); font-size: 15px; padding: 6px 2px 6px 8px; flex-shrink: 0; display: flex; }
+.list-row .row-title {
+  font-size: 16px; font-weight: 400; letter-spacing: -0.2px; line-height: 1.3;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.list-row .row-sub {
+  font-size: 14px; font-weight: 400; line-height: 1.3;
+  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-top: 1px;
+}
+.list-row .row-more {
+  color: rgba(255, 255, 255, 0.45); font-size: 15px;
+  padding: 8px 0 8px 10px; flex-shrink: 0; display: flex;
+}
 .list-row.playing .row-title { color: var(--accent); }
 
 .tracklist .list-row::after { left: 0; }
-.tracklist .row-index { width: 24px; text-align: center; color: var(--text-dim); font-size: 15px; flex-shrink: 0; }
+.tracklist .row-index {
+  width: 26px; text-align: center; flex-shrink: 0;
+  font-size: 15px; color: rgba(255, 255, 255, 0.45);
+  font-variant-numeric: tabular-nums;
+}
 
-.action-row { display: flex; gap: 12px; margin: 4px 0 22px; }
+/* --- Play / Shuffle pair --- */
+.action-row { display: flex; gap: 12px; margin: 0 0 24px; }
 .action-btn {
-  flex: 1; background: var(--surface); color: var(--accent);
-  font-size: 16.5px; font-weight: 600; padding: 13px 0; border-radius: 12px;
+  flex: 1;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--accent);
+  font-size: 17px; font-weight: 600; letter-spacing: -0.2px;
+  height: 50px; border-radius: 12px;
   display: flex; align-items: center; justify-content: center; gap: 8px;
   transition: transform 0.18s cubic-bezier(0.32, 0.72, 0, 1), background 0.18s;
 }
 .action-btn .ic { font-size: 17px; }
-.action-btn:active { background: var(--surface-2); transform: scale(0.97); }
+.action-btn:active { background: rgba(255, 255, 255, 0.13); transform: scale(0.97); }
 
-.segmented { display: flex; gap: 4px; margin: 10px 0 16px; background: var(--surface); border-radius: 9px; padding: 3px; }
-.seg-btn { flex: 1; padding: 7px 0; border-radius: 7px; font-size: 13.5px; font-weight: 600; color: var(--text-dim); }
-.seg-btn.active { background: var(--surface-2); color: var(--text); }
+/* --- Segmented control --- */
+.segmented {
+  display: flex; gap: 3px; margin: 4px 0 20px;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 10px; padding: 3px;
+}
+.seg-btn {
+  flex: 1; height: 32px; border-radius: 8px;
+  font-size: 13px; font-weight: 600; letter-spacing: -0.1px;
+  color: rgba(255, 255, 255, 0.55);
+  transition: background 0.2s, color 0.2s;
+}
+.seg-btn.active { background: rgba(255, 255, 255, 0.14); color: #fff; }
 
-.search-bar { padding: 4px 0 12px; }
-.search-bar input { width: 100%; border-radius: 10px; }
-.result-group-title { font-size: 21px; font-weight: 700; letter-spacing: -0.5px; margin: 20px 0 8px; }
-
-.detail-head-row { display: flex; align-items: center; justify-content: space-between; padding: 4px 0 14px; }
-.detail-header { text-align: center; padding: 2px 0 20px; }
+/* --- Detail headers --- */
+.detail-head-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 0 12px;
+}
+.detail-header { text-align: center; padding: 4px 0 24px; }
 .detail-cover {
   width: 232px; height: 232px; border-radius: 8px; object-fit: cover;
-  background: var(--surface); box-shadow: 0 14px 38px rgba(0, 0, 0, 0.6);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.65);
 }
-.detail-title { font-size: 21px; font-weight: 600; letter-spacing: -0.4px; margin-top: 16px; }
-.detail-sub { font-size: 20px; color: var(--accent); margin-top: 2px; letter-spacing: -0.3px; }
-.detail-meta { font-size: 12px; color: var(--text-dim); margin-top: 8px; text-transform: uppercase; letter-spacing: 0.3px; }
+.detail-title {
+  font-size: 22px; font-weight: 700; letter-spacing: -0.4px; line-height: 1.2;
+  margin-top: 16px;
+}
+.detail-sub {
+  font-size: 22px; font-weight: 400; letter-spacing: -0.4px; line-height: 1.2;
+  color: var(--accent); margin-top: 1px;
+}
+.detail-meta {
+  font-size: 12px; font-weight: 600; letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: 10px; text-transform: uppercase;
+}
 
-.empty-state { color: var(--text-dim); text-align: center; padding: 44px 20px; font-size: 14px; }
+.empty-state {
+  color: rgba(255, 255, 255, 0.45); text-align: center;
+  padding: 48px 20px; font-size: 15px;
+}
+
+/* On a detail screen the topbar collapses away; the view's own back / "..."
+   row takes over, so the section title is not left reading the wrong thing
+   ("Home" while an album was open). */
+.app.in-detail .topbar { display: none; }
+.app.in-detail .views { padding-top: calc(6px + var(--safe-top)); }
 
 .starred-tile {
   display: flex; align-items: center; gap: 12px;
@@ -220,50 +297,74 @@ input::placeholder { color: var(--text-dim); }
   padding: 12px 0 16px;
 }
 
+/* ===================================================================
+   PERSISTENT CHROME — mini player, tab bar, search button
+   These three sit on a shared baseline and share one rhythm: the same
+   bottom offset, the same corner family, the same 4px spacing steps.
+   =================================================================== */
+
+/* Mini player floats directly above the tab bar. */
 .mini-player {
   position: fixed;
   left: max(10px, calc(50% - 205px));
   right: max(10px, calc(50% - 205px));
-  bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 10px);
+  bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 8px + 10px);
   height: var(--miniplayer-h);
   border-radius: 18px;
-  display: flex; align-items: center; gap: 10px; padding: 0 8px;
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 8px 0 8px;
   z-index: 20;
   max-width: 410px;
   margin: 0 auto;
+  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
 }
-.mini-cover { width: 42px; height: 42px; border-radius: 8px; object-fit: cover; background: var(--surface); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45); }
+.mini-player:active { transform: scale(0.985); }
+.mini-cover {
+  width: 40px; height: 40px; border-radius: 7px;
+  object-fit: cover; background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;
+}
 .mini-meta { flex: 1; min-width: 0; }
-.mini-title { font-size: 14.5px; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mini-artist { font-size: 13px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mini-btn {
-  font-size: 17px; padding: 9px; color: var(--text); display: flex;
-  transition: transform 0.18s cubic-bezier(0.32, 0.72, 0, 1);
+.mini-title {
+  font-size: 15px; font-weight: 500; letter-spacing: -0.2px; line-height: 1.25;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.mini-btn:active { transform: scale(0.86); }
+.mini-artist {
+  font-size: 13px; font-weight: 400; line-height: 1.25;
+  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mini-btn {
+  font-size: 17px; color: #fff;
+  width: 38px; height: 38px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  transition: transform 0.18s cubic-bezier(0.32, 0.72, 0, 1), background 0.18s;
+}
+.mini-btn:active { transform: scale(0.86); background: rgba(255, 255, 255, 0.12); }
 
+/* Tab bar: a floating pill, not a full-width slab pinned to the edge. */
 .tabbar {
   position: fixed;
-  left: max(12px, calc(50% - 203px));
-  /* Leaves room for the round search button that sits alongside. */
-  right: calc(max(12px, calc(50% - 203px)) + var(--tabbar-h) + 10px);
+  left: max(10px, calc(50% - 205px));
+  /* Leaves room for the round search button alongside. */
+  right: calc(max(10px, calc(50% - 205px)) + var(--tabbar-h) + 8px);
   bottom: calc(8px + var(--safe-bottom));
   height: var(--tabbar-h);
-  padding: 6px;
+  padding: 5px;
   display: flex;
   align-items: stretch;
-  border-radius: 22px;
+  border-radius: 21px;
   z-index: 10;
 }
 .tab-pill {
   position: absolute;
-  top: 6px; bottom: 6px;
-  left: 6px;
+  top: 5px; bottom: 5px; left: 5px;
   width: 0;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.14);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
-  transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1), width 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+  background: rgba(255, 255, 255, 0.13);
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.2);
   pointer-events: none;
   z-index: 0;
 }
@@ -272,36 +373,37 @@ input::placeholder { color: var(--text-dim); }
   position: relative;
   z-index: 1;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 2px; font-size: 10px; font-weight: 500; color: var(--text-dim);
-  padding: 4px 0; border-radius: 16px;
-  transition: color 0.2s, transform 0.34s cubic-bezier(0.32, 0.72, 0, 1);
+  gap: 3px;
+  font-size: 10px; font-weight: 500; letter-spacing: 0;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 0; border-radius: 16px;
+  transition: color 0.22s;
 }
 .tab-btn.active { color: var(--accent); }
+.tab-icon { font-size: 21px; }
 /* Press feedback: the glyph swells and springs back. */
-.tab-btn .tab-icon {
-  transition: transform 0.34s cubic-bezier(0.32, 0.72, 0, 1);
+.tab-btn .tab-icon,
+.search-fab .tab-icon {
+  transition: transform 0.34s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.tab-btn:active .tab-icon { transform: scale(1.28); }
-.tab-btn:active { transform: scale(0.96); }
-.search-fab:active .tab-icon { transform: scale(1.28); }
-.tab-icon { font-size: 20px; }
+.tab-btn:active .tab-icon,
+.search-fab:active .tab-icon { transform: scale(1.22); }
 
-/* Search sits outside the tab bar as its own round button. It had no styling
-   at all, so it was collapsing to intrinsic size in the bottom-left corner. */
+/* Search sits outside the bar as its own round button. */
 .search-fab {
   position: fixed;
-  right: max(12px, calc(50% - 203px));
+  right: max(10px, calc(50% - 205px));
   bottom: calc(8px + var(--safe-bottom));
   width: var(--tabbar-h);
   height: var(--tabbar-h);
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  color: var(--text-dim);
+  color: rgba(255, 255, 255, 0.5);
   z-index: 10;
-  transition: color 0.2s, transform 0.18s cubic-bezier(0.32, 0.72, 0, 1);
+  transition: color 0.22s, transform 0.18s cubic-bezier(0.32, 0.72, 0, 1);
 }
 .search-fab.active { color: var(--accent); }
-.search-fab:active { transform: scale(0.9); }
+.search-fab:active { transform: scale(0.92); }
 
 /* ===================================================================
    NOW PLAYING
