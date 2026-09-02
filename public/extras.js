@@ -29,7 +29,7 @@
     return id ? apiUrl('getCoverArt', { id, size: size || 100 }) : '';
   }
   function esc(s) {
-    return (s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    return (s || '').replace(/[&<>"']/g, (c) => ({ '&': '&', '<': '<', '>': '>', '"': '"', "'": '&#39;' }[c]));
   }
   function icon(name) {
     return `<svg class="ic"><use href="#i-${name}"></use></svg>`;
@@ -143,6 +143,7 @@
   function songRow(song) {
     const row = el('div', 'list-row');
     row.dataset.songId = song.id;
+    song._list = song._list || [song];
     row.innerHTML = `
       <span class="row-star">${song.starred ? '★' : ''}</span>
       <img class="card-cover" loading="lazy" src="${cover(song.coverArt || song.id, 100)}" alt="" />
@@ -154,10 +155,16 @@
       <button class="row-more" aria-label="More">${icon('ellipsis')}</button>`;
     row.addEventListener('click', (e) => {
       if (e.target.closest('.row-more')) { openSongSheet(song); return; }
-      const audio = document.getElementById('audio');
-      if (audio) {
-        audio.src = Offline.urlFor(song.id) || apiUrl('stream', { id: song.id });
-        audio.play().catch(() => {});
+      const list = song._list || [song];
+      const idx = Math.max(0, list.findIndex((x) => x.id === song.id));
+      if (window.NipoPlayer && window.NipoPlayer.playQueue) {
+        window.NipoPlayer.playQueue(list, idx);
+      } else {
+        const audio = document.getElementById('audio');
+        if (audio) {
+          audio.src = Offline.urlFor(song.id) || apiUrl('stream', { id: song.id });
+          audio.play().catch(() => {});
+        }
       }
     });
     return row;
@@ -200,7 +207,7 @@
       wrap.innerHTML = '';
       wrap.appendChild(el('div', 'section-title', 'Station Mix'));
       const list = el('div', 'song-list');
-      songs.forEach((s) => list.appendChild(songRow(s)));
+      songs.forEach((s) => { s._list = songs; list.appendChild(songRow(s)); });
       wrap.appendChild(list);
       if (!songs.length) wrap.innerHTML = '<div class="empty-state">No songs for radio</div>';
     } catch {
@@ -253,7 +260,7 @@
         <div class="detail-meta">${songs.length} songs</div>`;
       wrap.appendChild(header);
       const list = el('div', 'song-list');
-      songs.forEach((s) => list.appendChild(songRow(s)));
+      songs.forEach((s) => { s._list = songs; list.appendChild(songRow(s)); });
       wrap.appendChild(list);
       if (!songs.length) list.appendChild(el('div', 'empty-state', 'Star a song to see it here'));
     } catch {
@@ -284,6 +291,7 @@
   }
   if (overlay) overlay.addEventListener('click', closeSheets);
 
+  window.NipoOpenSongSheet = openSongSheet;
   function openSongSheet(song) {
     if (!actionSheet || !actionBody) return;
     actionBody.innerHTML = '';
@@ -351,23 +359,27 @@
   function syncKeepButton(song) {
     const btn = document.getElementById('np-keep');
     if (!btn) return;
-    const on = song && Offline.has(song.id);
-    btn.classList.toggle('on', !!on);
+    const id = song && song.id;
+    const on = !!(id && Offline.has(id));
+    btn.classList.toggle('on', on);
     const use = btn.querySelector('use');
     if (use) use.setAttribute('href', on ? '#i-downloaded' : '#i-download');
   }
+  Offline.syncKeep = syncKeepButton;
 
   const keepBtn = document.getElementById('np-keep');
   if (keepBtn) {
     keepBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
+      const cur = window.NipoPlayer && window.NipoPlayer.current;
       const titleEl = document.getElementById('np-title');
-      const id = titleEl && titleEl.dataset.songId;
-      const title = titleEl && titleEl.textContent;
-      const artistEl = document.getElementById('np-artist');
-      const artist = artistEl && artistEl.textContent;
+      const id = (cur && cur.id) || (titleEl && titleEl.dataset.songId);
       if (!id) return;
-      const song = { id, title, artist };
+      const song = cur || {
+        id,
+        title: titleEl && titleEl.textContent,
+        artist: document.getElementById('np-artist') && document.getElementById('np-artist').textContent,
+      };
       if (Offline.has(id)) await Offline.remove(id);
       else await Offline.save(song);
       syncKeepButton(song);
