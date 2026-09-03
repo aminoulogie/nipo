@@ -84,8 +84,13 @@ input::placeholder { color: var(--text-dim); }
    to the plain frosted look rather than breaking. */
 .glass::before {
   z-index: -2;
-  backdrop-filter: blur(14px) saturate(190%);
-  -webkit-backdrop-filter: blur(14px) saturate(190%);
+  /* Light blur so shapes behind stay discernible rather than turning to
+     mush, high saturation so colour still carries through, and a slight
+     DARKENING. Brightening the backdrop was the mistake: on a dark UI it
+     lifted the pane toward the white text and the labels stopped reading.
+     Apple darkens here for the same reason. */
+  backdrop-filter: blur(9px) saturate(200%) brightness(0.72);
+  -webkit-backdrop-filter: blur(9px) saturate(200%) brightness(0.72);
   filter: url(#glass-refract);
   /* Promotes to its own layer; without it the displacement re-rasterises the
      whole pane on every scroll frame. */
@@ -96,20 +101,30 @@ input::placeholder { color: var(--text-dim); }
    rendering fault rather than glass. */
 .glass::after {
   z-index: -1;
-  background:
-    linear-gradient(150deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 40%),
-    /* A dark scrim, not a white tint: over bright artwork a white tint raised
-       the backdrop toward the text colour and the labels stopped reading. */
-    rgba(16, 16, 18, 0.34);
+  /* Barely-there white wash rather than a dark scrim. The scrim made the
+     panes read as grey slabs and blocked the colour behind them, which is
+     the whole point of the material. */
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.16),
+    rgba(255, 255, 255, 0.04) 46%,
+    rgba(255, 255, 255, 0.09)
+  );
   box-shadow:
-    inset 0 0 0 0.5px rgba(255, 255, 255, 0.18),
-    inset 0 1px 1px -0.5px rgba(255, 255, 255, 0.3),
-    inset 0 -1px 2px -1px rgba(0, 0, 0, 0.3);
+    /* The rim is the strongest cue that there is a physical edge here, so it
+       is a full hairline all the way round, not a faint half-pixel. */
+    inset 0 0 0 1px rgba(255, 255, 255, 0.34),
+    /* Specular catch along the top edge. */
+    inset 0 1.5px 1px -1px rgba(255, 255, 255, 0.65),
+    /* Faint bounce along the bottom, as light wraps the far edge. */
+    inset 0 -1.5px 1px -1px rgba(255, 255, 255, 0.22);
 }
-/* Belt and braces for legibility: artwork can be bright anywhere under a pane,
-   and the scrim alone cannot guarantee contrast for small labels. */
+/* The tint is light now, so contrast comes from the text itself. */
 .tabbar, .mini-player, .search-fab, .np-queue {
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+  /* The pane is light and lets colour through, so contrast has to come from
+     the glyphs. Two shadows: a tight one for edge definition and a wider,
+     softer one to seat the text against whatever is behind it. */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 2px 10px rgba(0, 0, 0, 0.4);
 }
 /* Small controls: a large displacement just smears at this size. */
 .round-btn.glass::before,
@@ -140,11 +155,8 @@ input::placeholder { color: var(--text-dim); }
   .mini-cover,
   .action-btn,
   .segmented,
-  .seg-btn,
   .starred-art,
-  .search-bar input,
-  .tab-btn,
-  .tab-pill {
+  .search-bar input {
     corner-shape: squircle;
   }
 }
@@ -417,7 +429,7 @@ input::placeholder { color: var(--text-dim); }
   right: max(10px, calc(50% - 205px));
   bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 8px + 10px);
   height: var(--miniplayer-h);
-  border-radius: 18px;
+  border-radius: 999px;
   display: flex; align-items: center; gap: 12px;
   padding: 0 8px 0 8px;
   z-index: 20;
@@ -434,12 +446,13 @@ input::placeholder { color: var(--text-dim); }
 }
 .mini-meta { flex: 1; min-width: 0; }
 .mini-title {
-  font-size: 15px; font-weight: 500; letter-spacing: -0.2px; line-height: 1.25;
+  font-size: 15px; font-weight: 600; letter-spacing: -0.2px; line-height: 1.25;
+  color: #fff;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .mini-artist {
   font-size: 13px; font-weight: 400; line-height: 1.25;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.78);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .mini-btn {
@@ -462,16 +475,20 @@ input::placeholder { color: var(--text-dim); }
   padding: 5px;
   display: flex;
   align-items: stretch;
-  border-radius: 21px;
+  border-radius: 999px;
   z-index: 10;
 }
 .tab-pill {
   position: absolute;
   top: 5px; bottom: 5px; left: 5px;
   width: 0;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.13);
-  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  /* The active pill is its own small pane, with the same rim and specular
+     treatment as the bar it sits in. */
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.26),
+    inset 0 1.5px 1px -1px rgba(255, 255, 255, 0.55);
   pointer-events: none;
   z-index: 0;
 }
@@ -481,13 +498,13 @@ input::placeholder { color: var(--text-dim); }
   z-index: 1;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 3px;
-  font-size: 10px; font-weight: 500; letter-spacing: 0;
-  color: rgba(255, 255, 255, 0.5);
-  padding: 0; border-radius: 16px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0;
+  color: #fff;
+  padding: 0; border-radius: 999px;
   transition: color 0.22s;
 }
 .tab-btn.active { color: var(--accent); }
-.tab-icon { font-size: 21px; }
+.tab-icon { font-size: 25px; }
 /* Press feedback: the glyph swells and springs back. */
 .tab-btn .tab-icon,
 .search-fab .tab-icon {
@@ -505,7 +522,7 @@ input::placeholder { color: var(--text-dim); }
   height: var(--tabbar-h);
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  color: rgba(255, 255, 255, 0.5);
+  color: #fff;
   z-index: 10;
   transition: color 0.22s, transform 0.18s cubic-bezier(0.32, 0.72, 0, 1);
 }
