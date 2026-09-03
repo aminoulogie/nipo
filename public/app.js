@@ -877,19 +877,22 @@
       delete input.dataset.dragging;
     }
 
-    input.addEventListener('touchstart', (e) => {
+    // Bound to the wrapper, not the input: the wrapper carries the padded
+    // touch target, while geometry is still measured from the visible bar so
+    // the value stays correct.
+    wrap.addEventListener('touchstart', (e) => {
       begin(e.touches[0].clientX);
     }, { passive: true });
-    input.addEventListener('touchmove', (e) => {
+    wrap.addEventListener('touchmove', (e) => {
       if (!active) return;
       e.preventDefault();
       apply(e.touches[0].clientX);
     }, { passive: false });
-    input.addEventListener('touchend', end);
-    input.addEventListener('touchcancel', end);
+    wrap.addEventListener('touchend', end);
+    wrap.addEventListener('touchcancel', end);
 
     // Desktop.
-    input.addEventListener('mousedown', (e) => { e.preventDefault(); begin(e.clientX); });
+    wrap.addEventListener('mousedown', (e) => { e.preventDefault(); begin(e.clientX); });
     window.addEventListener('mousemove', (e) => { if (active) apply(e.clientX); });
     window.addEventListener('mouseup', end);
     // Keyboard / assistive tech still drive the native input.

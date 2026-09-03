@@ -472,7 +472,7 @@ img.card-cover, img.detail-cover, img.np-cover, img.mini-cover {
 }
 .mini-player:active { transform: scale(0.985); }
 .mini-cover {
-  width: 40px; height: 40px; border-radius: 7px;
+  width: 42px; height: 42px; border-radius: 8px;
   object-fit: cover; background: rgba(255, 255, 255, 0.08);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
   flex-shrink: 0;
@@ -679,9 +679,13 @@ img.card-cover, img.detail-cover, img.np-cover, img.mini-cover {
   width: 1px; height: 1px; border: none; background: transparent;
 }
 /* The bar swells under the finger, Apple Music's scrubbing state. */
-.np-slider.scrubbing input[type=range] { height: 12px; border-radius: 6px; }
+/* The bar is thin by design, so the wrapper carries the touch target — a 7px
+   line is far below the ~44px minimum for a reliable finger hit. Listeners
+   are bound to the wrapper and measured against the input. */
+.np-slider { padding: 15px 0; margin: -15px 0; }
+.np-slider.scrubbing input[type=range] { height: 17px; border-radius: 9px; }
 
-.np-progress { margin-top: 24px; width: 100%; }
+.np-progress { margin-top: 30px; width: 100%; }
 .np-times {
   display: flex; justify-content: space-between;
   font-size: 12px; font-weight: 500;
@@ -707,12 +711,12 @@ img.card-cover, img.detail-cover, img.np-cover, img.mini-cover {
 /* --- Volume --- */
 .np-volume {
   display: flex; align-items: center; gap: 12px;
-  width: 100%; margin-top: 26px;
+  width: 100%; margin-top: 30px;
 }
 .np-volume .vol-icon { font-size: 13px; color: rgba(255, 255, 255, 0.42); flex-shrink: 0; }
 .np-volume .np-slider { flex: 1; }
 .np-volume input[type=range] { height: 5px; border-radius: 2.5px; }
-.np-volume .np-slider.scrubbing input[type=range] { height: 10px; border-radius: 5px; }
+.np-volume .np-slider.scrubbing input[type=range] { height: 14px; border-radius: 7px; }
 
 /* --- Bottom row --- */
 .np-bottom {
