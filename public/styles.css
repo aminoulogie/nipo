@@ -902,3 +902,34 @@ img.card-cover, img.detail-cover, img.np-cover, img.mini-cover {
 .tab-btn,
 .np-times { letter-spacing: 0.03em; }
 
+
+/* ===== Offline ===== */
+/* Says why the library looks sparse, rather than leaving it looking as
+   though everything has been lost. */
+.offline-bar {
+  flex-shrink: 0;
+  padding: calc(6px + var(--safe-top)) 18px 7px;
+  font-size: 12.5px; font-weight: 600; letter-spacing: -0.1px;
+  color: #ffd9a6;
+  background: rgba(255, 149, 0, 0.18);
+  text-align: center;
+}
+.app.is-offline .topbar { padding-top: 6px; }
+
+/* Keep Offline button states. A conic sweep carries real progress, so a long
+   download reads as advancing rather than merely busy. */
+.round-btn.busy::before,
+.round-btn.busy::after { content: none; }
+.round-btn.busy {
+  background: conic-gradient(var(--accent) var(--dl, 0%), rgba(255, 255, 255, 0.18) 0);
+}
+/* No measurable length: fall back to a pulse instead of a bar stuck at zero. */
+.round-btn.busy:not([style*="--dl"]) {
+  background: rgba(255, 255, 255, 0.18);
+  animation: keep-pulse 1s ease-in-out infinite;
+}
+.round-btn.failed { color: var(--accent); }
+@keyframes keep-pulse {
+  0%, 100% { opacity: 0.45; }
+  50%      { opacity: 1; }
+}

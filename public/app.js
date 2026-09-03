@@ -54,6 +54,16 @@
     coverUrl(id, size = 300) {
       return id ? this.url('getCoverArt', { id, size }) : '';
     },
+    // Artwork for a specific song, preferring the copy stored alongside a
+    // download so tiles are not blank when the server is unreachable.
+    songCoverUrl(song, size = 300) {
+      const Off = window.NipoOffline;
+      if (song && Off && Off.coverUrlFor) {
+        const local = Off.coverUrlFor(song.id);
+        if (local) return local;
+      }
+      return song ? this.coverUrl(song.coverArt || song.id, size) : '';
+    },
     streamUrl(id) {
       return this.url('stream', { id });
     },
@@ -171,7 +181,11 @@
     playCurrent() {
       const song = this.current;
       if (!song) return;
-      audio.src = Api.streamUrl(song.id);
+      // A downloaded track must play from disk, not the network — otherwise
+      // "Keep Offline" saves a file that is never used and playback still
+      // fails the moment the server is unreachable.
+      const Off = window.NipoOffline;
+      audio.src = (Off && Off.urlFor && Off.urlFor(song.id)) || Api.streamUrl(song.id);
       audio.play().catch(() => {});
       this.updateUI();
       this.updateMediaSession();
@@ -196,8 +210,8 @@
       if (!song) { mini.hidden = true; return; }
       mini.hidden = false;
 
-      const smallCover = Api.coverUrl(song.coverArt || song.id, 120);
-      const bigCover = Api.coverUrl(song.coverArt || song.id, 600);
+      const smallCover = Api.songCoverUrl(song, 120);
+      const bigCover = Api.songCoverUrl(song, 600);
       document.getElementById('mini-cover').src = smallCover;
       document.getElementById('mini-title').textContent = song.title || '';
       document.getElementById('mini-artist').textContent = song.artist || '';
@@ -887,12 +901,48 @@
   paintSlider(volEl);
 
   // ---------- Login ----------
-  function showApp() {
+  function showApp({ offline = false } = {}) {
     document.getElementById('login-screen').hidden = true;
     document.getElementById('app').hidden = false;
     syncToggleButtons();
-    Views.showHome();
+    if (offline) {
+      // Nothing on Home can load without the server, so open straight on the
+      // downloads, which are the only thing that works here.
+      setOfflineMode(true);
+      Nav.tabTo('library');
+      selectLibTab('downloaded');
+    } else {
+      Views.showHome();
+    }
   }
+
+  // Reflected in the UI so it is obvious why the rest of the library is empty,
+  // rather than looking like the app has lost everything.
+  function setOfflineMode(on) {
+    document.getElementById('app').classList.toggle('is-offline', on);
+    let bar = document.getElementById('offline-bar');
+    if (on && !bar) {
+      bar = el('div', 'offline-bar', 'Offline — showing downloads');
+      bar.id = 'offline-bar';
+      document.getElementById('app').prepend(bar);
+    } else if (!on && bar) {
+      bar.remove();
+    }
+  }
+  function selectLibTab(name) {
+    const btn = document.querySelector(`#library-tabs .seg-btn[data-lib="${name}"]`);
+    if (!btn) return;
+    document.querySelectorAll('#library-tabs .seg-btn').forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+    Views.showLibrary(name);
+  }
+
+  // Recover automatically when the network comes back, and drop into offline
+  // mode if it goes away mid-session.
+  window.addEventListener('online', () => {
+    Api.call('ping').then(() => setOfflineMode(false)).catch(() => {});
+  });
+  window.addEventListener('offline', () => setOfflineMode(true));
   function showLogin(err) {
     document.getElementById('login-screen').hidden = false;
     document.getElementById('app').hidden = true;
@@ -926,9 +976,23 @@
   });
 
   // ---------- Boot ----------
+  // Caches the app shell so the PWA opens without a reachable server. Failure
+  // is non-fatal: the app works exactly as before, just without that.
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    });
+  }
+
   document.getElementById('login-server').value = window.location.origin;
   if (Api.load()) {
-    Api.call('ping').then(showApp).catch(() => showLogin());
+    // A failed ping used to bounce straight to the sign-in screen, which made
+    // the app unusable away from the server even with tracks downloaded.
+    // Stored credentials plus an unreachable server means offline, not
+    // signed out — so open the app and let the offline library work.
+    Api.call('ping')
+      .then(() => showApp())
+      .catch(() => showApp({ offline: true }));
   } else {
     showLogin();
   }

@@ -52,6 +52,13 @@
     });
   }
 
+  // Blobs read back from IndexedDB, kept so a URL can be minted synchronously
+  // when playback starts. They are disk-backed, so holding the references does
+  // not pull the audio into memory.
+  const blobs = new Map();
+  const coverBlobs = new Map();
+  const coverUrls = new Map();
+
   const Offline = {
     ids: new Set(),
     async refresh() {
@@ -64,13 +71,40 @@
         });
         db.close();
         this.ids = new Set(recs.map((x) => x.id));
+        // Previously only save() populated the URL map, so after a reload a
+        // downloaded track had no local URL and silently streamed from the
+        // network again — which is exactly what offline playback needs not to
+        // do. Rehydrate from what is actually stored.
+        blobs.clear();
+        coverBlobs.clear();
+        recs.forEach((r) => {
+          if (r.blob) blobs.set(r.id, r.blob);
+          if (r.cover) coverBlobs.set(r.id, r.cover);
+        });
         return recs;
       } catch {
         return [];
       }
     },
     has(id) { return this.ids.has(id); },
-    urlFor(id) { return urls.get(id) || null; },
+    // Object URLs are minted on demand and cached, rather than creating one
+    // per stored track up front.
+    urlFor(id) {
+      if (urls.has(id)) return urls.get(id);
+      const b = blobs.get(id);
+      if (!b) return null;
+      const u = URL.createObjectURL(b);
+      urls.set(id, u);
+      return u;
+    },
+    coverUrlFor(id) {
+      if (coverUrls.has(id)) return coverUrls.get(id);
+      const b = coverBlobs.get(id);
+      if (!b) return null;
+      const u = URL.createObjectURL(b);
+      coverUrls.set(id, u);
+      return u;
+    },
     async list() {
       const recs = await this.refresh();
       return recs.map((r) => ({ song: r.song, id: r.id }));
@@ -85,11 +119,40 @@
       db.close();
       return rec;
     },
-    async save(song) {
+    // onProgress receives 0..1 where the server reports a length, otherwise
+    // null so callers can show an indeterminate state instead of a fake bar.
+    async save(song, onProgress) {
       const res = await fetch(apiUrl('stream', { id: song.id }));
-      if (!res.ok) throw new Error('Download failed');
-      const blob = await res.blob();
-      const rec = { id: song.id, song, blob, savedAt: Date.now() };
+      if (!res.ok) throw new Error(`Download failed (${res.status})`);
+
+      // Streamed rather than res.blob(), so a large track can report progress
+      // instead of sitting silent for the whole transfer.
+      let blob;
+      const total = Number(res.headers.get('content-length')) || 0;
+      if (res.body && typeof res.body.getReader === 'function') {
+        const reader = res.body.getReader();
+        const chunks = [];
+        let received = 0;
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          received += value.length;
+          if (onProgress) onProgress(total ? Math.min(1, received / total) : null);
+        }
+        blob = new Blob(chunks, { type: res.headers.get('content-type') || 'audio/mpeg' });
+      } else {
+        blob = await res.blob();
+      }
+
+      // Artwork too, otherwise a downloaded track shows a blank tile offline.
+      let coverBlob = null;
+      try {
+        const cRes = await fetch(cover(song.coverArt || song.id, 600));
+        if (cRes.ok) coverBlob = await cRes.blob();
+      } catch { /* artwork is optional; the audio is the point */ }
+
+      const rec = { id: song.id, song, blob, cover: coverBlob, savedAt: Date.now() };
       const db = await openDb();
       await new Promise((resolve, reject) => {
         const tx = db.transaction('tracks', 'readwrite');
@@ -98,8 +161,13 @@
         tx.onerror = () => reject(tx.error);
       });
       db.close();
+
       if (urls.has(song.id)) URL.revokeObjectURL(urls.get(song.id));
-      urls.set(song.id, URL.createObjectURL(blob));
+      urls.delete(song.id);
+      if (coverUrls.has(song.id)) URL.revokeObjectURL(coverUrls.get(song.id));
+      coverUrls.delete(song.id);
+      blobs.set(song.id, blob);
+      if (coverBlob) coverBlobs.set(song.id, coverBlob);
       this.ids.add(song.id);
       syncKeepButton(song);
     },
@@ -113,7 +181,17 @@
       });
       db.close();
       if (urls.has(id)) { URL.revokeObjectURL(urls.get(id)); urls.delete(id); }
+      if (coverUrls.has(id)) { URL.revokeObjectURL(coverUrls.get(id)); coverUrls.delete(id); }
+      blobs.delete(id);
+      coverBlobs.delete(id);
       this.ids.delete(id);
+    },
+    // Rough byte total, for showing how much space downloads are using.
+    usage() {
+      let bytes = 0;
+      blobs.forEach((b) => { bytes += b.size || 0; });
+      coverBlobs.forEach((b) => { bytes += b.size || 0; });
+      return bytes;
     },
   };
   window.NipoOffline = Offline;
@@ -451,9 +529,18 @@
       keepBtn.classList.add('busy');
       try {
         if (Offline.has(id)) await Offline.remove(id);
-        else await Offline.save(song);
+        else {
+          await Offline.save(song, (p) => {
+            // Drives a conic sweep on the button so a long download shows
+            // real progress rather than just a pulse.
+            if (p == null) keepBtn.style.removeProperty('--dl');
+            else keepBtn.style.setProperty('--dl', Math.round(p * 100) + '%');
+          });
+          keepBtn.style.removeProperty('--dl');
+        }
         syncKeepButton(song);
       } catch (err) {
+        keepBtn.style.removeProperty('--dl');
         console.warn('Keep Offline failed', err);
         keepBtn.classList.add('failed');
         setTimeout(() => keepBtn.classList.remove('failed'), 1600);
