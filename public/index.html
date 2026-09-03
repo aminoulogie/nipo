@@ -38,6 +38,35 @@
   <symbol id="i-downloaded" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m8.2 12.2 2.6 2.6 5.2-5.4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
   <symbol id="i-list-plus" viewBox="0 0 24 24"><path d="M4 7h11M4 12h8M4 17h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M17 14v6M14 17h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+
+  <!--
+    Refraction filters. A glass pane blurs what is behind it AND bends it;
+    backdrop-filter alone only blurs. Fractal noise drives a displacement map,
+    so the blurred backdrop is pushed around slightly and the pane reads as a
+    lens rather than frosted plastic.
+
+    Two octaves rather than more: this runs on every frame the pane moves over
+    scrolling content, and the extra octaves cost far more than they show at
+    these displacement scales.
+  -->
+  <filter id="glass-refract" color-interpolation-filters="sRGB"
+          filterUnits="objectBoundingBox" primitiveUnits="userSpaceOnUse"
+          x="0%" y="0%" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.014 0.009" numOctaves="2"
+                  seed="11" stitchTiles="stitch" result="noise"/>
+    <feDisplacementMap in="SourceGraphic" in2="noise" scale="14"
+                       xChannelSelector="R" yChannelSelector="B"/>
+  </filter>
+
+  <!-- Gentler version for small controls, where a large scale just smears. -->
+  <filter id="glass-refract-sm" color-interpolation-filters="sRGB"
+          filterUnits="objectBoundingBox" primitiveUnits="userSpaceOnUse"
+          x="0%" y="0%" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.022 0.016" numOctaves="2"
+                  seed="4" stitchTiles="stitch" result="noise"/>
+    <feDisplacementMap in="SourceGraphic" in2="noise" scale="6"
+                       xChannelSelector="R" yChannelSelector="B"/>
+  </filter>
 </defs></svg>
 <section id="login-screen" class="screen login-screen"><div class="login-card"><svg class="ic login-logo"><use href="#i-note"></use></svg><h1>Music</h1><p class="login-sub">Sign in to your Navidrome server</p><form id="login-form"><label><span>Server</span><input id="login-server" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" /></label><label><span>Username</span><input id="login-username" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" /></label><label><span>Password</span><input id="login-password" type="password" autocomplete="current-password" /></label><button type="submit" id="login-btn">Sign In</button><p id="login-error" class="login-error" hidden></p></form></div></section>
 <div id="app" class="app" hidden>
