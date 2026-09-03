@@ -302,8 +302,11 @@ input::placeholder { color: var(--text-dim); }
 img.card-cover, img.detail-cover, img.np-cover, img.mini-cover {
   aspect-ratio: 1 / 1;
   object-fit: cover;
-  align-self: start;
 }
+/* align-self only belongs on grid items. Applied to artwork inside a centred
+   flex row it pulled the mini-player and list thumbnails to the top of the
+   row instead of leaving them centred. */
+.grid > .card { align-self: start; }
 
 /* --- Rows --- */
 .list-row {
@@ -436,7 +439,15 @@ img.card-cover, img.detail-cover, img.np-cover, img.mini-cover {
 .create-row:active { background: rgba(255, 255, 255, 0.05); }
 .create-row .ic { font-size: 17px; width: 46px; }
 /* Marks a row whose track is saved offline. */
-.dl-mark { color: rgba(255, 255, 255, 0.4); font-size: 13px; display: flex; flex-shrink: 0; }
+/* Saved-to-device mark on a row. The glyph inside the filled disc is punched
+   through in the row background colour, matching Apple's filled variant. */
+.dl-mark {
+  color: rgba(255, 255, 255, 0.42);
+  --dl-glyph: #000;
+  font-size: 16px;
+  display: flex; flex-shrink: 0;
+  margin-left: 2px;
+}
 
 /* ===================================================================
    PERSISTENT CHROME — mini player, tab bar, search button

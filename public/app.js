@@ -97,6 +97,15 @@
     if (use) use.setAttribute('href', '#i-' + name);
   }
 
+  // Apple marks a saved track with a filled down-arrow on the row. Only shown
+  // once a track is actually stored — an empty slot on everything else would
+  // just be visual noise.
+  function offlineMark(song) {
+    const Off = window.NipoOffline;
+    if (!song || !Off || !Off.has || !Off.has(song.id)) return '';
+    return `<span class="dl-mark" aria-label="Downloaded">${icon('downloaded')}</span>`;
+  }
+
   // OpenSubsonic exposes explicitStatus; render the badge only when the server
   // actually reports it rather than guessing.
   function explicitBadge(item) {
@@ -246,7 +255,7 @@
         title: song.title || '',
         artist: song.artist || '',
         album: song.album || '',
-        artwork: [{ src: Api.coverUrl(song.coverArt || song.id, 600), sizes: '600x600', type: 'image/jpeg' }],
+        artwork: [{ src: Api.songCoverUrl(song, 600), sizes: '600x600', type: 'image/jpeg' }],
       });
       navigator.mediaSession.setActionHandler('play', () => this.toggle());
       navigator.mediaSession.setActionHandler('pause', () => this.toggle());
@@ -278,7 +287,7 @@
       if (!song) continue;
       const row = el('div', 'list-row');
       row.innerHTML = `
-        <img class="card-cover" loading="lazy" src="${Api.coverUrl(song.coverArt || song.id, 100)}" alt="" />
+        <img class="card-cover" loading="lazy" src="${Api.songCoverUrl(song, 100)}" alt="" />
         <div class="row-main">
           <div class="row-title">${esc(song.title)}${explicitBadge(song)}</div>
           <div class="row-sub">${esc(song.artist || '')}</div>
@@ -329,13 +338,14 @@
     const lead = numbered
       ? `<div class="row-index">${esc(String(song.track || idx + 1))}</div>`
       : `<span class="row-star">${song.starred ? '★' : ''}</span>
-         <img class="card-cover" loading="lazy" src="${Api.coverUrl(song.coverArt || song.id, 100)}" alt="" />`;
+         <img class="card-cover" loading="lazy" src="${Api.songCoverUrl(song, 100)}" alt="" />`;
     row.innerHTML = `
       ${lead}
       <div class="row-main">
         <div class="row-title">${esc(song.title)}${explicitBadge(song)}</div>
         <div class="row-sub">${esc(song.artist || '')}</div>
       </div>
+      ${offlineMark(song)}
       <button class="row-more" aria-label="More">${icon('ellipsis')}</button>`;
     row.addEventListener('click', (e) => {
       // extras.js owns the action sheet; these rows previously swallowed the
@@ -978,7 +988,11 @@
   // ---------- Boot ----------
   // Caches the app shell so the PWA opens without a reachable server. Failure
   // is non-fatal: the app works exactly as before, just without that.
-  if ('serviceWorker' in navigator) {
+  // Service workers require a secure context, so over plain http on a LAN
+  // address registration cannot succeed. Attempting it anyway just logs a
+  // fetch failure on every load, so it is skipped unless the context allows
+  // it — reachable today via https or localhost.
+  if ('serviceWorker' in navigator && window.isSecureContext) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js').catch(() => {});
     });
