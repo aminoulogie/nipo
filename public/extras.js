@@ -433,6 +433,7 @@
       song.starred = song.starred ? undefined : new Date().toISOString();
       const starBtn = document.getElementById('np-star');
       if (starBtn) starBtn.classList.toggle('on', !!song.starred);
+      if (window.NipoSyncRowMarks) window.NipoSyncRowMarks(song.id, { starred: !!song.starred });
     });
     add('Add to Playlist', 'list-plus', () => openAddToPlaylist(song));
     // Drop the track in directly after whatever is playing.
@@ -453,10 +454,14 @@
       add('Remove Download', 'downloaded', async () => {
         await Offline.remove(song.id);
         syncKeepButton(song);
+        if (window.NipoSyncRowMarks) window.NipoSyncRowMarks(song.id, { downloaded: false });
       });
     } else {
       add('Keep Offline', 'download', async () => {
-        try { await Offline.save(song); } catch (err) { console.warn(err); }
+        try {
+          await Offline.save(song);
+          if (window.NipoSyncRowMarks) window.NipoSyncRowMarks(song.id, { downloaded: true });
+        } catch (err) { console.warn(err); }
       });
     }
     actionSheet.hidden = false;
@@ -539,6 +544,9 @@
           keepBtn.style.removeProperty('--dl');
         }
         syncKeepButton(song);
+        if (window.NipoSyncRowMarks) {
+          window.NipoSyncRowMarks(id, { downloaded: Offline.has(id) });
+        }
       } catch (err) {
         keepBtn.style.removeProperty('--dl');
         console.warn('Keep Offline failed', err);

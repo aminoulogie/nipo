@@ -321,7 +321,19 @@ img.card-cover, img.detail-cover, img.np-cover, img.mini-cover {
 }
 .list-row:last-child::after { display: none; }
 .list-row:active { background: rgba(255, 255, 255, 0.05); }
-.list-row .row-star { color: var(--accent); font-size: 11px; width: 10px; flex-shrink: 0; }
+/* Both leading and trailing markers keep their space when inactive, so rows
+   stay aligned whether or not a track is starred or downloaded — only the
+   glyph fades out. */
+.list-row .row-star {
+  color: var(--accent);
+  font-size: 12px;
+  width: 12px;
+  flex-shrink: 0;
+  display: flex; align-items: center;
+  transition: opacity 0.2s, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.row-star.is-off, .dl-mark.is-off { opacity: 0; transform: scale(0.6); pointer-events: none; }
+.dl-mark { transition: opacity 0.2s, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .list-row .card-cover {
   width: 46px; height: 46px; border-radius: 5px; flex-shrink: 0;
   box-shadow: 0 1px 5px rgba(0, 0, 0, 0.35);

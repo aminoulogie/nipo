@@ -101,10 +101,35 @@
   // once a track is actually stored — an empty slot on everything else would
   // just be visual noise.
   function offlineMark(song) {
-    const Off = window.NipoOffline;
-    if (!song || !Off || !Off.has || !Off.has(song.id)) return '';
-    return `<span class="dl-mark" aria-label="Downloaded">${icon('downloaded')}</span>`;
+    const on = isOffline(song);
+    return `<span class="dl-mark${on ? '' : ' is-off'}" aria-label="Downloaded">${icon('downloaded')}</span>`;
   }
+  function isOffline(song) {
+    const Off = window.NipoOffline;
+    return !!(song && Off && Off.has && Off.has(song.id));
+  }
+  // The leading favourite marker. Always rendered so the row's columns line up
+  // whether or not the track is starred; only its visibility changes.
+  function starMark(song) {
+    const on = !!(song && song.starred);
+    return `<span class="row-star${on ? '' : ' is-off'}" aria-label="Favourite">${icon('star')}</span>`;
+  }
+
+  // Star and download state live in several lists at once, so toggling one has
+  // to update every rendered copy rather than only the row that was tapped.
+  function syncRowMarks(songId, { starred, downloaded } = {}) {
+    document.querySelectorAll(`.list-row[data-song-id="${CSS.escape(songId)}"]`).forEach((row) => {
+      if (starred !== undefined) {
+        const s = row.querySelector('.row-star');
+        if (s) s.classList.toggle('is-off', !starred);
+      }
+      if (downloaded !== undefined) {
+        const d = row.querySelector('.dl-mark');
+        if (d) d.classList.toggle('is-off', !downloaded);
+      }
+    });
+  }
+  window.NipoSyncRowMarks = syncRowMarks;
 
   // OpenSubsonic exposes explicitStatus; render the badge only when the server
   // actually reports it rather than guessing.
@@ -335,9 +360,12 @@
   function songRow(song, list, idx, { numbered = false } = {}) {
     const row = el('div', 'list-row');
     row.dataset.songId = song.id;
+    // The star used to appear only on rows that showed artwork, so a
+    // favourited track looked unfavourited in every album tracklist. It now
+    // leads every row, numbered or not, and uses the same glyph as the player.
     const lead = numbered
-      ? `<div class="row-index">${esc(String(song.track || idx + 1))}</div>`
-      : `<span class="row-star">${song.starred ? '★' : ''}</span>
+      ? `${starMark(song)}<div class="row-index">${esc(String(song.track || idx + 1))}</div>`
+      : `${starMark(song)}
          <img class="card-cover" loading="lazy" src="${Api.songCoverUrl(song, 100)}" alt="" />`;
     row.innerHTML = `
       ${lead}
@@ -836,11 +864,15 @@
     const nowStarred = !song.starred;
     e.currentTarget.classList.toggle('on', nowStarred);
     song.starred = nowStarred ? new Date().toISOString() : undefined;
+    // The same track may be on screen in a tracklist, the queue and a search
+    // result at once; all of them have to follow.
+    syncRowMarks(song.id, { starred: nowStarred });
     try {
       await Api.call(nowStarred ? 'star' : 'unstar', { id: song.id });
     } catch {
       song.starred = nowStarred ? undefined : song.starred;
       e.currentTarget.classList.toggle('on', !nowStarred);
+      syncRowMarks(song.id, { starred: !nowStarred });
     }
   });
 
