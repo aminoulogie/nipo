@@ -1,0 +1,91 @@
+name: Build iOS ipa
+
+# Produces an UNSIGNED .ipa. Signing happens on install, with Sideloadly or
+# AltStore using a personal Apple ID, so this repo never holds a certificate,
+# a provisioning profile, or any Apple credential.
+
+on:
+  push:
+    tags:
+      - 'ios-v*'
+  workflow_dispatch:
+    inputs:
+      server:
+        description: 'Default Navidrome server URL baked into the build'
+        required: false
+        default: 'https://amine.taildb7026.ts.net'
+
+jobs:
+  build:
+    runs-on: macos-14
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Stage web assets for the native shell
+        env:
+          NIPO_SERVER: ${{ github.event.inputs.server || 'https://amine.taildb7026.ts.net' }}
+        run: node stage_native.js
+
+      - name: Sync Capacitor
+        run: npx cap sync ios
+
+      # Building without signing keeps Apple credentials out of CI entirely.
+      # The archive still contains a complete .app; only the signature is
+      # missing, and the sideloading tool adds that at install time.
+      - name: Archive (unsigned)
+        run: |
+          set -eo pipefail
+          cd ios/App
+          xcodebuild \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath "$RUNNER_TEMP/Nipo.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            archive
+
+      # An .ipa is just a zip with the .app inside a Payload/ directory.
+      # xcodebuild -exportArchive is not usable here because exporting
+      # requires a signing identity.
+      - name: Package as .ipa
+        run: |
+          set -eo pipefail
+          APP_PATH="$RUNNER_TEMP/Nipo.xcarchive/Products/Applications/App.app"
+          test -d "$APP_PATH" || { echo "No .app in archive"; exit 1; }
+          mkdir -p "$RUNNER_TEMP/Payload"
+          cp -R "$APP_PATH" "$RUNNER_TEMP/Payload/"
+          cd "$RUNNER_TEMP"
+          zip -qry Nipo-unsigned.ipa Payload
+          ls -lh Nipo-unsigned.ipa
+
+      # A near-empty archive means the web assets never made it in, which
+      # would otherwise only show up as a blank screen on the device.
+      - name: Verify the bundle carries the web assets
+        run: |
+          set -eo pipefail
+          APP="$RUNNER_TEMP/Nipo.xcarchive/Products/Applications/App.app"
+          for f in index.html app.js extras.js styles.css md5.js; do
+            test -f "$APP/public/$f" || { echo "missing public/$f in bundle"; exit 1; }
+          done
+          grep -q 'NIPO_DEFAULT_SERVER' "$APP/public/index.html" \
+            || { echo 'default server was not injected'; exit 1; }
+          echo "bundle contents verified"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Nipo-unsigned-ipa
+          path: ${{ runner.temp }}/Nipo-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 30

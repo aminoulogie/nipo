@@ -1,0 +1,19 @@
+{
+  "name": "nipo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Apple Music-style client for a self-hosted Navidrome server",
+  "scripts": {
+    "stage": "node stage_native.js",
+    "icons": "node generate-icons.js",
+    "serve": "node server.js",
+    "sync:ios": "npm run stage && npx cap sync ios"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.0"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/ios": "^6.2.0"
+  }
+}

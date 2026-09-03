@@ -1033,7 +1033,11 @@
     });
   }
 
-  document.getElementById('login-server').value = window.location.origin;
+  // In the browser the app is served by the proxy, so its own origin is the
+  // right default. The native shell has no server behind it — its origin is
+  // capacitor://localhost — so a default is injected at build time instead.
+  document.getElementById('login-server').value =
+    window.NIPO_DEFAULT_SERVER || window.location.origin;
   if (Api.load()) {
     // A failed ping used to bounce straight to the sign-in screen, which made
     // the app unusable away from the server even with tracks downloaded.

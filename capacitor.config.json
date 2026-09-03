@@ -1,0 +1,13 @@
+{
+  "appId": "net.aminoulogie.nipo",
+  "appName": "Nipo",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https",
+    "iosScheme": "capacitor"
+  },
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#000000"
+  }
+}

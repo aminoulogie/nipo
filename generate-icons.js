@@ -129,9 +129,12 @@ function gradientAt(u, v) {
 }
 
 // ---------- Render ----------
-function makeIcon(size) {
+// square: iOS app icons must be fully opaque with square corners — the system
+// applies its own mask, and a pre-rounded transparent icon renders with dark
+// fringing inside the mask.
+function makeIcon(size, { square = false } = {}) {
   const big = size * SS;
-  const radius = 0.225; // fraction of the edge
+  const radius = square ? 0 : 0.225; // fraction of the edge
   const hi = Buffer.alloc(big * big * 4);
 
   for (let y = 0; y < big; y++) {
@@ -140,7 +143,7 @@ function makeIcon(size) {
       const v = (y + 0.5) / big;
       const off = (y * big + x) * 4;
 
-      if (!inRoundedSquare(u, v, radius)) continue; // left transparent
+      if (!square && !inRoundedSquare(u, v, radius)) continue; // left transparent
 
       if (inNote(u, v)) {
         hi[off] = 255; hi[off + 1] = 255; hi[off + 2] = 255; hi[off + 3] = 255;
@@ -187,3 +190,12 @@ for (const size of [192, 512]) {
   fs.writeFileSync(path.join(outDir, `icon-${size}.png`), makeIcon(size));
 }
 console.log('Icons written to', outDir);
+
+// The native app icon, when the iOS project is present.
+const iosIcon = path.join(
+  __dirname, 'ios', 'App', 'App', 'Assets.xcassets', 'AppIcon.appiconset', 'AppIcon-512@2x.png',
+);
+if (fs.existsSync(path.dirname(iosIcon))) {
+  fs.writeFileSync(iosIcon, makeIcon(1024, { square: true }));
+  console.log('iOS app icon written to', iosIcon);
+}
