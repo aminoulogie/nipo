@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const { URL } = require('url');
 const os = require('os');
+const crypto = require('crypto');
 
 // Navidrome runs on this same PC, so talk to it via loopback — avoids
 // breaking if the machine's LAN IP changes (it's DHCP-assigned).
@@ -43,7 +44,25 @@ function serveStatic(req, res) {
       return;
     }
     const ext = path.extname(filePath);
-    res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
+
+    // Without any caching headers a browser falls back to heuristic caching
+    // and may hold on to app files for a long time. iOS Safari does this
+    // aggressively, and a home-screen PWA more so again, which meant deploys
+    // silently did not reach the phone. An ETag lets the browser revalidate
+    // cheaply: unchanged files come back as a 304 with no body.
+    const etag = `W/"${crypto.createHash('sha1').update(data).digest('hex').slice(0, 16)}"`;
+    if (req.headers['if-none-match'] === etag) {
+      res.writeHead(304, { ETag: etag, 'Cache-Control': 'no-cache' });
+      res.end();
+      return;
+    }
+
+    res.writeHead(200, {
+      'Content-Type': MIME[ext] || 'application/octet-stream',
+      // "no-cache" still caches, it just forces revalidation before reuse.
+      'Cache-Control': 'no-cache',
+      ETag: etag,
+    });
     res.end(data);
   });
 }

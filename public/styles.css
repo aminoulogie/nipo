@@ -120,6 +120,35 @@ input::placeholder { color: var(--text-dim); }
   .glass::after { background: rgba(38, 38, 42, 0.96); }
 }
 
+/* ===== Continuous ("squircle") corners =====
+   A plain border-radius joins a straight edge to a circular arc abruptly.
+   Apple's corners are superellipses: the curve starts earlier and eases in,
+   so there is no visible kink where the edge meets the arc.
+
+   Done with corner-shape where it exists (Safari 26+ / Chrome 139+), which
+   keeps border-radius, overflow clipping and backdrop-filter all working.
+   A mask-image squircle is the usual workaround, but it would clip away the
+   refraction layers, so panes keep their plain radius on older engines
+   rather than losing their glass. */
+@supports (corner-shape: squircle) {
+  .glass,
+  .glass::before,
+  .glass::after,
+  .card-cover,
+  .detail-cover,
+  .np-cover,
+  .mini-cover,
+  .action-btn,
+  .segmented,
+  .seg-btn,
+  .starred-art,
+  .search-bar input,
+  .tab-btn,
+  .tab-pill {
+    corner-shape: squircle;
+  }
+}
+
 .explicit {
   display: inline-block;
   font-size: 9px; font-weight: 600; line-height: 1;
@@ -817,3 +846,20 @@ input::placeholder { color: var(--text-dim); }
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ===== Optical letter-spacing =====
+   Tracking that looks right at 17px looks loose at 34px and cramped at 11px,
+   so each step of the ramp is nudged rather than sharing one value. */
+.topbar-title { letter-spacing: -0.022em; }
+.section-title,
+.result-group-title,
+.detail-title,
+.np-title { letter-spacing: -0.019em; }
+.card-title,
+.card-sub,
+.list-row .row-title,
+.mini-title { letter-spacing: -0.01em; }
+.detail-meta,
+.tab-btn,
+.np-times { letter-spacing: 0.03em; }
+
