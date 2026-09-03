@@ -281,14 +281,20 @@ input::placeholder { color: var(--text-dim); }
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  /* minmax(0, 1fr), not 1fr. A plain 1fr track refuses to shrink below its
+     content's min-content width, and the nowrap album titles make that the
+     full untruncated title — so one long name widened both columns and
+     pushed the whole page into horizontal scrolling. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px 14px;
   margin-top: 4px;
   /* Grid items stretch to the row height by default; a tall row would then
      drag the artwork out of square. Pin items to the row start instead. */
   align-items: start;
 }
-.grid .card { flex: none; width: 100%; }
+/* Same reason: a grid item defaults to min-width:auto (min-content), which
+   the nowrap title inflates. Without this the track sizing above is undone. */
+.grid .card { flex: none; width: 100%; min-width: 0; }
 .grid .card-cover { width: 100%; height: auto; aspect-ratio: 1/1; }
 /* Artwork must never render non-square, whatever container it lands in and
    whatever proportions the file itself has. object-fit crops rather than
