@@ -9,11 +9,6 @@ on:
     tags:
       - 'ios-v*'
   workflow_dispatch:
-    inputs:
-      server:
-        description: 'Default Navidrome server URL baked into the build'
-        required: false
-        default: 'https://amine.taildb7026.ts.net'
 
 jobs:
   build:
@@ -31,8 +26,6 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Stage web assets for the native shell
-        env:
-          NIPO_SERVER: ${{ github.event.inputs.server || 'https://amine.taildb7026.ts.net' }}
         run: node stage_native.js
 
       - name: Sync Capacitor
@@ -76,11 +69,9 @@ jobs:
         run: |
           set -eo pipefail
           APP="$RUNNER_TEMP/Nipo.xcarchive/Products/Applications/App.app"
-          for f in index.html app.js extras.js styles.css md5.js; do
+          for f in index.html local.js styles.css; do
             test -f "$APP/public/$f" || { echo "missing public/$f in bundle"; exit 1; }
           done
-          grep -q 'NIPO_DEFAULT_SERVER' "$APP/public/index.html" \
-            || { echo 'default server was not injected'; exit 1; }
           echo "bundle contents verified"
 
       - uses: actions/upload-artifact@v4
