@@ -1,112 +1,42 @@
-// Minimal zero-dependency static file server + reverse proxy to Navidrome.
-// Serves the PWA from /public and forwards all /rest/* Subsonic API calls
-// (including audio streaming with Range support) to the real Navidrome server,
-// so the browser only ever talks to ONE origin (no CORS issues).
+// Zero-dependency static development server for Nipo.
+// The app is fully local/offline at runtime; this server only helps preview
+// the bundled web UI during development.
 
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const { URL } = require('url');
 const os = require('os');
 const crypto = require('crypto');
 
-// Navidrome runs on this same PC, so talk to it via loopback — avoids
-// breaking if the machine's LAN IP changes (it's DHCP-assigned).
-const NAVIDROME_HOST = '127.0.0.1';
-const NAVIDROME_PORT = 4533;
-const LISTEN_PORT = 4534;
+const PORT = 4534;
 const PUBLIC_DIR = path.join(__dirname, 'public');
-
 const MIME = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'application/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.webmanifest': 'application/manifest+json',
-  '.svg': 'image/svg+xml',
-  '.png': 'image/png',
-  '.ico': 'image/x-icon',
+  '.html':'text/html; charset=utf-8',
+  '.js':'application/javascript; charset=utf-8',
+  '.css':'text/css; charset=utf-8',
+  '.json':'application/json; charset=utf-8',
+  '.webmanifest':'application/manifest+json',
+  '.svg':'image/svg+xml',
+  '.png':'image/png',
+  '.ico':'image/x-icon',
 };
 
-function serveStatic(req, res) {
+const server = http.createServer((req,res)=>{
   let reqPath = decodeURIComponent(req.url.split('?')[0]);
   if (reqPath === '/') reqPath = '/index.html';
-  const filePath = path.join(PUBLIC_DIR, reqPath);
-  if (!filePath.startsWith(PUBLIC_DIR)) {
-    res.writeHead(403);
-    res.end();
-    return;
-  }
-  fs.readFile(filePath, (err, data) => {
-    if (err) {
-      res.writeHead(404, { 'Content-Type': 'text/plain' });
-      res.end('Not found');
-      return;
-    }
-    const ext = path.extname(filePath);
-
-    // Without any caching headers a browser falls back to heuristic caching
-    // and may hold on to app files for a long time. iOS Safari does this
-    // aggressively, and a home-screen PWA more so again, which meant deploys
-    // silently did not reach the phone. An ETag lets the browser revalidate
-    // cheaply: unchanged files come back as a 304 with no body.
-    const etag = `W/"${crypto.createHash('sha1').update(data).digest('hex').slice(0, 16)}"`;
-    if (req.headers['if-none-match'] === etag) {
-      res.writeHead(304, { ETag: etag, 'Cache-Control': 'no-cache' });
-      res.end();
-      return;
-    }
-
-    res.writeHead(200, {
-      'Content-Type': MIME[ext] || 'application/octet-stream',
-      // "no-cache" still caches, it just forces revalidation before reuse.
-      'Cache-Control': 'no-cache',
-      ETag: etag,
-    });
+  const filePath = path.normalize(path.join(PUBLIC_DIR, reqPath));
+  if (!filePath.startsWith(PUBLIC_DIR)) { res.writeHead(403); return res.end(); }
+  fs.readFile(filePath,(err,data)=>{
+    if (err) { res.writeHead(404,{'Content-Type':'text/plain'}); return res.end('Not found'); }
+    const etag='W/"'+crypto.createHash('sha1').update(data).digest('hex').slice(0,16)+'"';
+    if(req.headers['if-none-match']===etag){res.writeHead(304,{ETag:etag,'Cache-Control':'no-cache'});return res.end();}
+    res.writeHead(200,{'Content-Type':MIME[path.extname(filePath)]||'application/octet-stream','Cache-Control':'no-cache',ETag:etag});
     res.end(data);
   });
-}
-
-function proxyToNavidrome(req, res) {
-  const target = new URL(req.url, `http://${NAVIDROME_HOST}:${NAVIDROME_PORT}`);
-  const headers = { ...req.headers, host: `${NAVIDROME_HOST}:${NAVIDROME_PORT}` };
-
-  const options = {
-    hostname: NAVIDROME_HOST,
-    port: NAVIDROME_PORT,
-    path: target.pathname + target.search,
-    method: req.method,
-    headers,
-  };
-
-  const proxyReq = http.request(options, (proxyRes) => {
-    res.writeHead(proxyRes.statusCode, proxyRes.headers);
-    proxyRes.pipe(res, { end: true });
-  });
-
-  proxyReq.on('error', (e) => {
-    if (!res.headersSent) res.writeHead(502, { 'Content-Type': 'text/plain' });
-    res.end('Bad gateway: ' + e.message);
-  });
-
-  req.pipe(proxyReq, { end: true });
-}
-
-const server = http.createServer((req, res) => {
-  if (req.url.startsWith('/rest/')) {
-    proxyToNavidrome(req, res);
-  } else {
-    serveStatic(req, res);
-  }
 });
 
-server.listen(LISTEN_PORT, '0.0.0.0', () => {
-  const nets = os.networkInterfaces();
-  console.log(`Navidrome PWA client running:`);
-  console.log(`  http://localhost:${LISTEN_PORT}`);
-  Object.values(nets).flat().forEach((n) => {
-    if (n && n.family === 'IPv4' && !n.internal) {
-      console.log(`  http://${n.address}:${LISTEN_PORT}`);
-    }
-  });
+server.listen(PORT,'0.0.0.0',()=>{
+  console.log('Nipo local preview:');
+  console.log('  http://localhost:'+PORT);
+  Object.values(os.networkInterfaces()).flat().forEach(n=>{if(n&&n.family==='IPv4'&&!n.internal)console.log('  http://'+n.address+':'+PORT);});
 });
