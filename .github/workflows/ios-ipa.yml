@@ -4,6 +4,9 @@ name: Build iOS ipa
 # AltStore using a personal Apple ID, so this repo never holds a certificate,
 # a provisioning profile, or any Apple credential.
 
+permissions:
+  contents: write
+
 on:
   push:
     branches:
@@ -82,3 +85,17 @@ jobs:
           path: ${{ runner.temp }}/Nipo-unsigned.ipa
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eo pipefail
+          TAG="ios-build-${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ATTEMPT}"
+          TITLE="Nipo iOS Build #${GITHUB_RUN_NUMBER}"
+          gh release create "$TAG" \
+            "$RUNNER_TEMP/Nipo-unsigned.ipa#Nipo-unsigned.ipa" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "$TITLE" \
+            --notes "Automated unsigned iOS IPA built from commit ${GITHUB_SHA}."
