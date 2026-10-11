@@ -903,14 +903,22 @@ img.card-cover, img.detail-cover, img.np-cover, img.mini-cover {
 /* Now Playing bar tracks the scrubber without a stepped look. */
 .np-slider input[type=range] { transition: height 0.24s var(--ease-spring), border-radius 0.24s var(--ease-spring); }
 
+/* Nipo keeps its interaction motion enabled. The previous global
+   prefers-reduced-motion rule reduced every transition to 0.01ms, which could
+   make the player sheet, artwork and slider feedback look completely static
+   inside WKWebView. */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+  .list-row,
+  .grid .card {
+    animation-duration: 0.18s;
+    animation-delay: 0ms;
   }
+}
+
+.np-slider {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 /* ===== Optical letter-spacing =====
