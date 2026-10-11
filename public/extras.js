@@ -428,6 +428,26 @@
       b.addEventListener('click', async () => { closeSheets(); await fn(); });
       actionBody.appendChild(b);
     };
+    if (song.local) {
+      add('Play Next', 'queue', () => {
+        const P = window.NipoPlayer;
+        if (!P || !P.queue) return;
+        P.queue.push(song);
+        P.order.splice(P.pos + 1, 0, P.queue.length - 1);
+      });
+      add('Remove Local File', 'downloaded', async () => {
+        await Offline.remove(song.id);
+        const active = document.querySelector('#library-tabs .seg-btn[data-lib="downloaded"].active');
+        if (active && window.NipoViews && window.NipoViews.showLibrary) {
+          await window.NipoViews.showLibrary('downloaded');
+        }
+      });
+      actionSheet.hidden = false;
+      showOverlay();
+      requestAnimationFrame(() => actionSheet.classList.add('open'));
+      return;
+    }
+
     add(song.starred ? 'Undo Favorite' : 'Favorite', 'star', async () => {
       await api(song.starred ? 'unstar' : 'star', { id: song.id });
       song.starred = song.starred ? undefined : new Date().toISOString();
@@ -506,6 +526,11 @@
     const btn = document.getElementById('np-keep');
     if (!btn) return;
     const id = song && song.id;
+    if (song && song.local) {
+      btn.hidden = true;
+      return;
+    }
+    btn.hidden = false;
     const on = !!(id && Offline.has(id));
     btn.classList.toggle('on', on);
     const use = btn.querySelector('use');
