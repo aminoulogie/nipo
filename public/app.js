@@ -743,7 +743,7 @@
 
   function dragStart(y, target) {
     // Controls and the scrollable queue keep their own gestures.
-    if (target && target.closest && target.closest('button, input[type=range], .np-queue')) return;
+    if (target && target.closest && target.closest('button, input[type=range], .np-slider, .np-queue')) return;
     dragFrom = y;
     dragLastY = y;
     dragLastT = performance.now();
@@ -884,7 +884,8 @@
   // native drag on a range input, so both sliders are driven by hand here:
   // the value is computed straight from where the finger is along the track.
   function bindSlider(input, wrap, onChange) {
-    let active = false;
+    let activePointer = null;
+    let touchActive = false;
 
     function valueAt(clientX) {
       const r = input.getBoundingClientRect();
@@ -894,43 +895,79 @@
       const max = Number(input.max || 100);
       return min + ratio * (max - min);
     }
+
     function apply(clientX) {
       input.value = String(Math.round(valueAt(clientX)));
       paintSlider(input);
       onChange(Number(input.value));
     }
+
     function begin(clientX) {
-      active = true;
       wrap.classList.add('scrubbing');
       input.dataset.dragging = '1';
       apply(clientX);
     }
+
     function end() {
-      if (!active) return;
-      active = false;
       wrap.classList.remove('scrubbing');
       delete input.dataset.dragging;
+      activePointer = null;
+      touchActive = false;
     }
 
-    // Bound to the wrapper, not the input: the wrapper carries the padded
-    // touch target, while geometry is still measured from the visible bar so
-    // the value stays correct.
+    // Pointer Events are the most reliable path in modern WKWebView. Pointer
+    // capture keeps the slider tracking even when the finger moves outside
+    // the thin visible bar.
+    wrap.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      activePointer = e.pointerId;
+      try { wrap.setPointerCapture(e.pointerId); } catch {}
+      e.preventDefault();
+      e.stopPropagation();
+      begin(e.clientX);
+    });
+
+    wrap.addEventListener('pointermove', (e) => {
+      if (activePointer !== e.pointerId) return;
+      e.preventDefault();
+      e.stopPropagation();
+      apply(e.clientX);
+    });
+
+    const endPointer = (e) => {
+      if (activePointer !== e.pointerId) return;
+      e.preventDefault();
+      e.stopPropagation();
+      try { wrap.releasePointerCapture(e.pointerId); } catch {}
+      end();
+    };
+    wrap.addEventListener('pointerup', endPointer);
+    wrap.addEventListener('pointercancel', endPointer);
+
+    // Fallback for WebViews that do not dispatch Pointer Events consistently.
+    // Do not run this path if a pointer gesture is already active.
     wrap.addEventListener('touchstart', (e) => {
+      if (activePointer !== null || !e.touches.length) return;
+      touchActive = true;
+      e.stopPropagation();
       begin(e.touches[0].clientX);
     }, { passive: true });
+
     wrap.addEventListener('touchmove', (e) => {
-      if (!active) return;
+      if (!touchActive || activePointer !== null || !e.touches.length) return;
       e.preventDefault();
+      e.stopPropagation();
       apply(e.touches[0].clientX);
     }, { passive: false });
-    wrap.addEventListener('touchend', end);
+
+    wrap.addEventListener('touchend', (e) => {
+      if (!touchActive || activePointer !== null) return;
+      e.stopPropagation();
+      end();
+    });
     wrap.addEventListener('touchcancel', end);
 
-    // Desktop.
-    wrap.addEventListener('mousedown', (e) => { e.preventDefault(); begin(e.clientX); });
-    window.addEventListener('mousemove', (e) => { if (active) apply(e.clientX); });
-    window.addEventListener('mouseup', end);
-    // Keyboard / assistive tech still drive the native input.
+    // Native input/keyboard accessibility stays functional as well.
     input.addEventListener('input', () => {
       paintSlider(input);
       onChange(Number(input.value));
