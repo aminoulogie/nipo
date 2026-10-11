@@ -45,6 +45,20 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<!-- The server is a private Navidrome instance reached either over the
+	     Tailscale HTTPS name or, on the home network, a plain-http LAN
+	     address. iOS blocks plain http by default, so local networking is
+	     opted back in. This is scoped to local addresses: arbitrary loads on
+	     the public internet stay blocked. -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<!-- iOS 14+ requires this to be declared before an app may reach devices
+	     on the local network at all. -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Nipo connects to your Navidrome music server on your local network.</string>
 	<!-- Playback continues when the screen locks or the app is backgrounded. -->
 	<key>UIBackgroundModes</key>
 	<array>
