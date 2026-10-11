@@ -2,7 +2,7 @@
   "name": "nipo",
   "version": "0.1.0",
   "private": true,
-  "description": "Offline local music player for iOS with Files import",
+  "description": "Apple Music-style client for a self-hosted Navidrome server",
   "scripts": {
     "stage": "node stage_native.js",
     "icons": "node generate-icons.js",
