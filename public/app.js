@@ -62,6 +62,7 @@
         const local = Off.coverUrlFor(song.id);
         if (local) return local;
       }
+      if (song && song.local) return '/icons/icon-512.png';
       return song ? this.coverUrl(song.coverArt || song.id, size) : '';
     },
     streamUrl(id) {
@@ -256,7 +257,9 @@
       titleEl.dataset.songId = song.id;
       titleEl.innerHTML = esc(song.title) + explicitBadge(song);
       document.getElementById('np-artist').textContent = song.artist || '';
-      document.getElementById('np-star').classList.toggle('on', !!song.starred);
+      const starBtn = document.getElementById('np-star');
+      starBtn.hidden = !!song.local;
+      starBtn.classList.toggle('on', !!song.starred);
       applyArtworkTint(bigCover);
       // Keep the download icon showing the new track's state, not the old one.
       if (window.NipoOffline && window.NipoOffline.syncKeep) window.NipoOffline.syncKeep(song);
@@ -860,7 +863,7 @@
   // Favourite the playing track (Subsonic star/unstar).
   document.getElementById('np-star').addEventListener('click', async (e) => {
     const song = Player.current;
-    if (!song) return;
+    if (!song || song.local) return;
     const nowStarred = !song.starred;
     e.currentTarget.classList.toggle('on', nowStarred);
     song.starred = nowStarred ? new Date().toISOString() : undefined;
