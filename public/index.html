@@ -67,10 +67,10 @@
     <feDisplacementMap in="SourceGraphic" in2="noise" scale="6"
                        xChannelSelector="R" yChannelSelector="B"/>
   </filter>
+<symbol id="i-settings" viewBox="0 0 24 24"><path d="M12 8.2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M19.4 13.4c.08-.46.12-.93.12-1.4s-.04-.94-.12-1.4l2-1.56-2-3.46-2.46.98a7.8 7.8 0 0 0-2.42-1.4L14.16 2h-4.02l-.36 3.16a7.8 7.8 0 0 0-2.42 1.4L4.9 5.58l-2 3.46 2 1.56A8.1 8.1 0 0 0 4.78 12c0 .47.04.94.12 1.4l-2 1.56 2 3.46 2.46-.98a7.8 7.8 0 0 0 2.42 1.4l.36 3.16h4.02l.36-3.16a7.8 7.8 0 0 0 2.42-1.4l2.46.98 2-3.46-2-1.56Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 </defs></svg>
-<section id="login-screen" class="screen login-screen"><div class="login-card"><svg class="ic login-logo"><use href="#i-note"></use></svg><h1>Music</h1><p class="login-sub">Sign in to your Navidrome server</p><form id="login-form"><label><span>Server</span><input id="login-server" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" /></label><label><span>Username</span><input id="login-username" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" /></label><label><span>Password</span><input id="login-password" type="password" autocomplete="current-password" /></label><button type="submit" id="login-btn">Sign In</button><p id="login-error" class="login-error" hidden></p></form></div></section>
 <div id="app" class="app" hidden>
-<header class="topbar"><div class="topbar-title" id="topbar-title">Home</div><div class="topbar-actions"><button class="round-btn glass" id="create-playlist-btn" aria-label="New playlist"><svg class="ic"><use href="#i-plus"></use></svg></button><button class="round-btn glass" id="logout-btn" aria-label="Sign out"><svg class="ic"><use href="#i-power"></use></svg></button></div></header>
+<header class="topbar"><div class="topbar-title" id="topbar-title">Home</div><div class="topbar-actions"><button class="round-btn glass" id="create-playlist-btn" aria-label="New playlist"><svg class="ic"><use href="#i-plus"></use></svg></button><button class="round-btn glass" id="settings-btn" aria-label="Settings"><svg class="ic"><use href="#i-settings"></use></svg></button></div></header>
 <main id="views" class="views">
 <section id="view-home" class="view"><div class="section" id="home-recent"></div><div class="section" id="home-random"></div><div class="section" id="home-frequent"></div></section>
 <section id="view-new" class="view" hidden><div id="new-content"></div></section>
@@ -91,6 +91,28 @@
 <div id="sheet-overlay" class="sheet-overlay" hidden></div>
 <div id="action-sheet" class="action-sheet glass" hidden><div class="sheet-handle"></div><div id="action-sheet-body"></div></div>
 <div id="create-sheet" class="create-sheet glass" hidden><h3>New Playlist</h3><input id="create-name" type="text" placeholder="Playlist name" maxlength="80" /><div class="create-actions"><button class="ghost" id="create-cancel" type="button">Cancel</button><button class="primary" id="create-confirm" type="button">Create</button></div></div>
+<div id="settings-sheet" class="settings-sheet glass" hidden>
+  <div class="sheet-handle"></div>
+  <div class="settings-head">
+    <div>
+      <h3>Settings</h3>
+      <p>Use Nipo locally, or connect Navidrome whenever you want.</p>
+    </div>
+    <button class="round-btn glass" id="settings-close" aria-label="Close settings"><svg class="ic"><use href="#i-chevron-left"></use></svg></button>
+  </div>
+  <div class="settings-section">
+    <div class="settings-section-title">Navidrome</div>
+    <div id="navidrome-status" class="settings-status">Not connected</div>
+    <form id="login-form" class="settings-form">
+      <label><span>Server</span><input id="login-server" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://your-server.example" /></label>
+      <label><span>Username</span><input id="login-username" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" /></label>
+      <label><span>Password</span><input id="login-password" type="password" autocomplete="current-password" /></label>
+      <button type="submit" id="login-btn" class="primary settings-connect">Connect Navidrome</button>
+      <p id="login-error" class="login-error" hidden></p>
+    </form>
+    <button type="button" id="navidrome-disconnect" class="settings-danger" hidden>Disconnect Navidrome</button>
+  </div>
+</div>
 <audio id="audio" preload="metadata"></audio>
 <script src="/md5.js"></script>
 <script src="/app.js"></script>
