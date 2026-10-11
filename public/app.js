@@ -985,35 +985,84 @@
   bindSlider(volEl, volWrap, (v) => { audio.volume = v / 100; });
   paintSlider(volEl);
 
-  // ---------- Login ----------
-  function showApp({ offline = false } = {}) {
-    document.getElementById('login-screen').hidden = true;
-    document.getElementById('app').hidden = false;
-    syncToggleButtons();
-    if (offline) {
-      // Nothing on Home can load without the server, so open straight on the
-      // downloads, which are the only thing that works here.
-      setOfflineMode(true);
-      Nav.tabTo('library');
-      selectLibTab('downloaded');
-    } else {
-      Views.showHome();
+  // ---------- Connection / Settings ----------
+  function showDisconnectedHome() {
+    Nav.tabTo('home');
+    const recent = document.getElementById('home-recent');
+    const random = document.getElementById('home-random');
+    const frequent = document.getElementById('home-frequent');
+    recent.innerHTML = `
+      <div class="local-home">
+        <div class="local-home-card">
+          <h2>Your music, immediately</h2>
+          <p>Nipo works without signing in. Import music from Files or open your local library. Navidrome is optional and can be connected later in Settings.</p>
+          <div class="local-home-actions">
+            <button class="action-btn" id="home-import-files">${icon('download')} Import Files</button>
+            <button class="action-btn" id="home-local-library">${icon('library')} Local Library</button>
+          </div>
+        </div>
+      </div>`;
+    random.innerHTML = '';
+    frequent.innerHTML = '';
+
+    const importBtn = document.getElementById('home-import-files');
+    if (importBtn) {
+      importBtn.addEventListener('click', () => {
+        const topImport = document.getElementById('import-files-btn');
+        const picker = document.getElementById('files-import-input');
+        if (topImport) topImport.click();
+        else if (picker) picker.click();
+      });
+    }
+    const localBtn = document.getElementById('home-local-library');
+    if (localBtn) {
+      localBtn.addEventListener('click', () => {
+        Nav.tabTo('library');
+        selectLibTab('downloaded');
+      });
     }
   }
 
-  // Reflected in the UI so it is obvious why the rest of the library is empty,
-  // rather than looking like the app has lost everything.
+  function syncConnectionChrome() {
+    const create = document.getElementById('create-playlist-btn');
+    if (create) create.hidden = !Api.token;
+  }
+
+  function showApp({ offline = false, disconnected = false } = {}) {
+    document.getElementById('app').hidden = false;
+    syncToggleButtons();
+    syncConnectionChrome();
+
+    if (disconnected) {
+      setOfflineMode(false);
+      showDisconnectedHome();
+      return;
+    }
+
+    if (offline) {
+      setOfflineMode(true);
+      Nav.tabTo('library');
+      selectLibTab('downloaded');
+      return;
+    }
+
+    setOfflineMode(false);
+    Nav.tabTo('home');
+    Views.showHome();
+  }
+
   function setOfflineMode(on) {
     document.getElementById('app').classList.toggle('is-offline', on);
     let bar = document.getElementById('offline-bar');
     if (on && !bar) {
-      bar = el('div', 'offline-bar', 'Offline — showing downloads');
+      bar = el('div', 'offline-bar', 'Navidrome unavailable — local music still works');
       bar.id = 'offline-bar';
       document.getElementById('app').prepend(bar);
     } else if (!on && bar) {
       bar.remove();
     }
   }
+
   function selectLibTab(name) {
     const btn = document.querySelector(`#library-tabs .seg-btn[data-lib="${name}"]`);
     if (!btn) return;
@@ -1022,71 +1071,142 @@
     Views.showLibrary(name);
   }
 
-  // Recover automatically when the network comes back, and drop into offline
-  // mode if it goes away mid-session.
-  window.addEventListener('online', () => {
-    Api.call('ping').then(() => setOfflineMode(false)).catch(() => {});
-  });
-  window.addEventListener('offline', () => setOfflineMode(true));
-  function showLogin(err) {
-    document.getElementById('login-screen').hidden = false;
-    document.getElementById('app').hidden = true;
-    const errEl = document.getElementById('login-error');
-    if (err) { errEl.textContent = err; errEl.hidden = false; } else { errEl.hidden = true; }
+  const settingsSheet = document.getElementById('settings-sheet');
+  const settingsOverlay = document.getElementById('sheet-overlay');
+  const settingsBtn = document.getElementById('settings-btn');
+  const settingsClose = document.getElementById('settings-close');
+  const disconnectBtn = document.getElementById('navidrome-disconnect');
+  const navStatus = document.getElementById('navidrome-status');
+  const serverInput = document.getElementById('login-server');
+  const usernameInput = document.getElementById('login-username');
+  const passwordInput = document.getElementById('login-password');
+  const loginError = document.getElementById('login-error');
+
+  function syncSettings() {
+    serverInput.value = Api.server || window.NIPO_DEFAULT_SERVER || '';
+    usernameInput.value = Api.username || '';
+    passwordInput.value = '';
+    const connected = !!Api.token;
+    navStatus.textContent = connected
+      ? 'Connected' + (Api.username ? ' as ' + Api.username : '')
+      : 'Not connected — local mode';
+    navStatus.classList.toggle('connected', connected);
+    disconnectBtn.hidden = !connected;
+    syncConnectionChrome();
   }
+
+  function openSettings() {
+    syncSettings();
+    loginError.hidden = true;
+    settingsOverlay.hidden = false;
+    settingsSheet.hidden = false;
+    requestAnimationFrame(() => {
+      settingsOverlay.classList.add('open');
+      settingsSheet.classList.add('open');
+    });
+  }
+
+  function closeSettings() {
+    settingsSheet.classList.remove('open');
+    settingsOverlay.classList.remove('open');
+    setTimeout(() => {
+      settingsSheet.hidden = true;
+      if (!document.querySelector('.action-sheet.open, .create-sheet.open')) {
+        settingsOverlay.hidden = true;
+      }
+    }, 420);
+  }
+
+  settingsBtn.addEventListener('click', openSettings);
+  settingsClose.addEventListener('click', closeSettings);
+  settingsOverlay.addEventListener('click', () => {
+    if (!settingsSheet.hidden) closeSettings();
+  });
 
   document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const server = document.getElementById('login-server').value.trim() || window.location.origin;
-    const username = document.getElementById('login-username').value.trim();
-    const password = document.getElementById('login-password').value;
+
+    const server = serverInput.value.trim();
+    const username = usernameInput.value.trim();
+    const password = passwordInput.value;
     const btn = document.getElementById('login-btn');
-    btn.disabled = true; btn.textContent = 'Signing in…';
+
+    if (!server || !username || !password) {
+      loginError.textContent = 'Enter server, username and password.';
+      loginError.hidden = false;
+      return;
+    }
+
+    const previous = {
+      server: Api.server,
+      username: Api.username,
+      salt: Api.salt,
+      token: Api.token,
+    };
+
+    btn.disabled = true;
+    btn.textContent = 'Connecting…';
+    loginError.hidden = true;
     Api.setCreds(server, username, password);
+
     try {
       await Api.call('ping');
       Api.save();
-      showApp();
+      syncSettings();
+      closeSettings();
+      setOfflineMode(false);
+      Nav.tabTo('home');
+      await Views.showHome();
     } catch (err) {
-      showLogin(err.message || 'Sign in failed');
+      Object.assign(Api, previous);
+      loginError.textContent = err.message || 'Could not connect to Navidrome';
+      loginError.hidden = false;
     } finally {
-      btn.disabled = false; btn.textContent = 'Sign In';
+      btn.disabled = false;
+      btn.textContent = 'Connect Navidrome';
     }
   });
 
-  document.getElementById('logout-btn').addEventListener('click', () => {
-    audio.pause();
+  disconnectBtn.addEventListener('click', () => {
     Api.clear();
-    showLogin();
+    syncSettings();
+    closeSettings();
+    setOfflineMode(false);
+    showDisconnectedHome();
+  });
+
+  // If Navidrome credentials exist, reconnect when the network returns.
+  window.addEventListener('online', () => {
+    if (!Api.token) return;
+    Api.call('ping')
+      .then(() => {
+        setOfflineMode(false);
+        Nav.tabTo('home');
+        Views.showHome();
+      })
+      .catch(() => {});
+  });
+  window.addEventListener('offline', () => {
+    if (Api.token) setOfflineMode(true);
   });
 
   // ---------- Boot ----------
-  // Caches the app shell so the PWA opens without a reachable server. Failure
-  // is non-fatal: the app works exactly as before, just without that.
-  // Service workers require a secure context, so over plain http on a LAN
-  // address registration cannot succeed. Attempting it anyway just logs a
-  // fetch failure on every load, so it is skipped unless the context allows
-  // it — reachable today via https or localhost.
   if ('serviceWorker' in navigator && window.isSecureContext) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js').catch(() => {});
     });
   }
 
-  // In the browser the app is served by the proxy, so its own origin is the
-  // right default. The native shell has no server behind it — its origin is
-  // capacitor://localhost — so a default is injected at build time instead.
-  document.getElementById('login-server').value =
-    window.NIPO_DEFAULT_SERVER || window.location.origin;
-  if (Api.load()) {
-    // A failed ping used to bounce straight to the sign-in screen, which made
-    // the app unusable away from the server even with tracks downloaded.
-    // Stored credentials plus an unreachable server means offline, not
-    // signed out — so open the app and let the offline library work.
+  const hasSavedNavidrome = Api.load();
+  serverInput.value = Api.server || window.NIPO_DEFAULT_SERVER || '';
+
+  // Nipo always opens first. Navidrome authentication is optional and lives
+  // in Settings; there is no launch-time login gate.
+  if (hasSavedNavidrome) {
     Api.call('ping')
       .then(() => showApp())
       .catch(() => showApp({ offline: true }));
   } else {
-    showLogin();
+    showApp({ disconnected: true });
   }
 })();
