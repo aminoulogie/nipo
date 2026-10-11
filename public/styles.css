@@ -968,3 +968,124 @@ img.card-cover, img.detail-cover, img.np-cover, img.mini-cover {
   0%, 100% { opacity: 0.45; }
   50%      { opacity: 1; }
 }
+
+
+/* ===== Settings ===== */
+.settings-sheet {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  width: min(100%, 430px);
+  max-height: calc(100dvh - var(--safe-top) - 18px);
+  z-index: 80;
+  transform: translate(-50%, 105%);
+  transition: transform .42s var(--ease-spring);
+  padding: 8px 20px calc(24px + var(--safe-bottom));
+  border-radius: 24px 24px 0 0;
+  overflow-y: auto;
+  background: rgba(24, 24, 27, .96);
+}
+.settings-sheet.open { transform: translate(-50%, 0); }
+.settings-sheet .sheet-handle { margin: 2px auto 14px; }
+.settings-head {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+.settings-head h3 {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: -.02em;
+}
+.settings-head p {
+  margin: 5px 0 0;
+  color: rgba(255,255,255,.52);
+  font-size: 14px;
+  line-height: 1.35;
+}
+.settings-section {
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.055);
+}
+.settings-section-title {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+.settings-status {
+  font-size: 13px;
+  color: rgba(255,255,255,.48);
+  margin-bottom: 16px;
+}
+.settings-status.connected { color: #68d391; }
+.settings-form {
+  display: grid;
+  gap: 13px;
+}
+.settings-form label {
+  display: grid;
+  gap: 7px;
+}
+.settings-form label span {
+  color: rgba(255,255,255,.58);
+  font-size: 13px;
+  font-weight: 600;
+}
+.settings-form input {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 13px;
+  background: rgba(255,255,255,.08);
+  color: #fff;
+  padding: 0 13px;
+  font: inherit;
+  outline: none;
+}
+.settings-form input:focus {
+  border-color: rgba(255,255,255,.22);
+  background: rgba(255,255,255,.11);
+}
+.settings-connect {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 3px;
+}
+.settings-danger {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 12px;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(255,69,58,.12);
+  color: #ff6961;
+  font: inherit;
+  font-weight: 650;
+}
+.local-home {
+  padding: 28px 4px 8px;
+}
+.local-home-card {
+  padding: 22px;
+  border-radius: 20px;
+  background: rgba(255,255,255,.055);
+  border: 1px solid rgba(255,255,255,.06);
+}
+.local-home-card h2 {
+  margin: 0 0 7px;
+  font-size: 22px;
+}
+.local-home-card p {
+  margin: 0;
+  color: rgba(255,255,255,.52);
+  line-height: 1.45;
+}
+.local-home-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+.local-home-actions .action-btn { flex: 1; justify-content: center; }
