@@ -986,58 +986,15 @@
   paintSlider(volEl);
 
   // ---------- Connection / Settings ----------
-  function showDisconnectedHome() {
-    Nav.tabTo('home');
-    const recent = document.getElementById('home-recent');
-    const random = document.getElementById('home-random');
-    const frequent = document.getElementById('home-frequent');
-    recent.innerHTML = `
-      <div class="local-home">
-        <div class="local-home-card">
-          <h2>Your music, immediately</h2>
-          <p>Nipo works without signing in. Import music from Files or open your local library. Navidrome is optional and can be connected later in Settings.</p>
-          <div class="local-home-actions">
-            <button class="action-btn" id="home-import-files">${icon('download')} Import Files</button>
-            <button class="action-btn" id="home-local-library">${icon('library')} Local Library</button>
-          </div>
-        </div>
-      </div>`;
-    random.innerHTML = '';
-    frequent.innerHTML = '';
-
-    const importBtn = document.getElementById('home-import-files');
-    if (importBtn) {
-      importBtn.addEventListener('click', () => {
-        const topImport = document.getElementById('import-files-btn');
-        const picker = document.getElementById('files-import-input');
-        if (topImport) topImport.click();
-        else if (picker) picker.click();
-      });
-    }
-    const localBtn = document.getElementById('home-local-library');
-    if (localBtn) {
-      localBtn.addEventListener('click', () => {
-        Nav.tabTo('library');
-        selectLibTab('downloaded');
-      });
-    }
-  }
-
   function syncConnectionChrome() {
     const create = document.getElementById('create-playlist-btn');
     if (create) create.hidden = !Api.token;
   }
 
-  function showApp({ offline = false, disconnected = false } = {}) {
+  function showApp({ offline = false } = {}) {
     document.getElementById('app').hidden = false;
     syncToggleButtons();
     syncConnectionChrome();
-
-    if (disconnected) {
-      setOfflineMode(false);
-      showDisconnectedHome();
-      return;
-    }
 
     if (offline) {
       setOfflineMode(true);
@@ -1172,7 +1129,8 @@
     syncSettings();
     closeSettings();
     setOfflineMode(false);
-    showDisconnectedHome();
+    Nav.tabTo('home');
+    Views.showHome();
   });
 
   // If Navidrome credentials exist, reconnect when the network returns.
@@ -1200,13 +1158,10 @@
   const hasSavedNavidrome = Api.load();
   serverInput.value = Api.server || window.NIPO_DEFAULT_SERVER || '';
 
-  // Nipo always opens first. Navidrome authentication is optional and lives
-  // in Settings; there is no launch-time login gate.
   if (hasSavedNavidrome) {
-    Api.call('ping')
-      .then(() => showApp())
-      .catch(() => showApp({ offline: true }));
+    showApp();
+    Api.call('ping').catch(() => setOfflineMode(true));
   } else {
-    showApp({ disconnected: true });
+    showApp();
   }
 })();
