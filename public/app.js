@@ -216,9 +216,16 @@
     playCurrent() {
       const song = this.current;
       if (!song) return;
-      // A downloaded track must play from disk, not the network — otherwise
-      // "Keep Offline" saves a file that is never used and playback still
-      // fails the moment the server is unreachable.
+      if (song.source === 'youtube') {
+        audio.pause();
+        audio.src = '';
+        YT.playSong(song);
+        this.updateUI();
+        this.updateMediaSession();
+        renderQueue();
+        return;
+      }
+      YT.stop();
       const Off = window.NipoOffline;
       audio.src = (Off && Off.urlFor && Off.urlFor(song.id)) || Api.streamUrl(song.id);
       audio.play().catch(() => {});
@@ -228,6 +235,7 @@
     },
     toggle() {
       if (!this.current) return;
+      if (this.current.source === 'youtube') { YT.toggle(); return; }
       if (audio.paused) audio.play().catch(() => {}); else audio.pause();
     },
     next() {
@@ -235,7 +243,12 @@
       else if (this.repeat && this.order.length) { this.pos = 0; this.playCurrent(); }
     },
     prev() {
-      if (audio.currentTime > 3) { audio.currentTime = 0; return; }
+      const cur = this.current;
+      const t = cur && cur.source === 'youtube' ? YT.currentTime() : audio.currentTime;
+      if (t > 3) {
+        if (cur && cur.source === 'youtube') YT.seekTo(0); else audio.currentTime = 0;
+        return;
+      }
       if (this.pos > 0) { this.pos--; this.playCurrent(); }
     },
 
@@ -245,22 +258,27 @@
       if (!song) { mini.hidden = true; return; }
       mini.hidden = false;
 
-      const smallCover = Api.songCoverUrl(song, 120);
-      const bigCover = Api.songCoverUrl(song, 600);
+      const isYT = song.source === 'youtube';
+      const smallCover = isYT ? (song.thumbnail || '') : Api.songCoverUrl(song, 120);
+      const bigCover = isYT ? (song.thumbnail || '') : Api.songCoverUrl(song, 600);
       document.getElementById('mini-cover').src = smallCover;
       document.getElementById('mini-title').textContent = song.title || '';
       document.getElementById('mini-artist').textContent = song.artist || '';
-      document.getElementById('np-cover').src = bigCover;
+      const npCover = document.getElementById('np-cover');
+      const ytWrap = document.getElementById('yt-player-wrap');
+      npCover.hidden = isYT;
+      if (ytWrap) ytWrap.hidden = !isYT;
+      if (!isYT) npCover.src = bigCover;
       const titleEl = document.getElementById('np-title');
-      // extras.js reads this as a fallback for which song the Keep Offline
-      // button should act on.
-      titleEl.dataset.songId = song.id;
-      titleEl.innerHTML = esc(song.title) + explicitBadge(song);
+      titleEl.dataset.songId = song.id || '';
+      titleEl.innerHTML = esc(song.title) + (isYT ? '<span class="yt-badge">YT</span>' : explicitBadge(song));
       document.getElementById('np-artist').textContent = song.artist || '';
       const starBtn = document.getElementById('np-star');
-      starBtn.hidden = !!song.local;
+      starBtn.hidden = isYT || !!song.local;
       starBtn.classList.toggle('on', !!song.starred);
-      applyArtworkTint(bigCover);
+      const keepBtn = document.getElementById('np-keep');
+      if (keepBtn) keepBtn.hidden = isYT;
+      if (!isYT) applyArtworkTint(bigCover);
       // Keep the download icon showing the new track's state, not the old one.
       if (window.NipoOffline && window.NipoOffline.syncKeep) window.NipoOffline.syncKeep(song);
 
@@ -270,7 +288,9 @@
       });
     },
     updatePlayIcons() {
-      const playing = !audio.paused && !audio.ended;
+      const playing = this.current && this.current.source === 'youtube'
+        ? YT.isPlaying()
+        : (!audio.paused && !audio.ended);
       setIcon(document.getElementById('mini-playpause'), playing ? 'pause' : 'play');
       setIcon(document.getElementById('np-playpause'), playing ? 'pause' : 'play');
       document.getElementById('now-playing').classList.toggle('paused', !playing);
@@ -385,6 +405,22 @@
         if (window.NipoOpenSongSheet) window.NipoOpenSongSheet(song);
         return;
       }
+      Player.playQueue(list, idx);
+    });
+    return row;
+  }
+
+  function ytSongRow(song, list, idx) {
+    const row = el('div', 'list-row');
+    row.dataset.songId = song.id;
+    row.innerHTML = `
+      <img class="card-cover" loading="lazy" src="${esc(song.thumbnail)}" alt="" />
+      <div class="row-main">
+        <div class="row-title">${esc(song.title)}<span class="yt-badge">YT</span></div>
+        <div class="row-sub">${esc(song.artist || '')}</div>
+      </div>`;
+    row.addEventListener('click', () => {
+      if (!YT._ready && !window.YTApiLoading) YT.loadAPI();
       Player.playQueue(list, idx);
     });
     return row;
@@ -601,6 +637,99 @@
     stagger(row);
   }
 
+  // ---------- YouTube ----------
+  const YT = {
+    _player: null,
+    _ready: false,
+    _state: -1, // YT player state (-1=unstarted, 1=playing, 2=paused, 5=cued)
+    _pendingVideoId: null,
+
+    apiKey() {
+      try { return localStorage.getItem('yt-api-key') || ''; } catch { return ''; }
+    },
+    saveKey(k) {
+      try { localStorage.setItem('yt-api-key', k); } catch {}
+    },
+    clearKey() {
+      try { localStorage.removeItem('yt-api-key'); } catch {}
+    },
+
+    loadAPI() {
+      if (window.YTApiLoading) return;
+      window.YTApiLoading = true;
+      window.onYouTubeIframeAPIReady = () => {
+        this._player = new window.YT.Player('yt-player', {
+          height: '100%',
+          width: '100%',
+          playerVars: { playsinline: 1, controls: 0, rel: 0, modestbranding: 1 },
+          events: {
+            onReady: () => {
+              this._ready = true;
+              if (this._pendingVideoId) { this._player.loadVideoById(this._pendingVideoId); this._pendingVideoId = null; }
+            },
+            onStateChange: (e) => {
+              this._state = e.data;
+              Player.updatePlayIcons();
+              // Auto-advance when video ends
+              if (e.data === 0) Player.next();
+            },
+            onError: () => Player.next(),
+          },
+        });
+      };
+      const s = document.createElement('script');
+      s.src = 'https://www.youtube.com/iframe_api';
+      document.head.appendChild(s);
+    },
+
+    playSong(song) {
+      if (!this._ready || !this._player) {
+        this._pendingVideoId = song.videoId;
+        this.loadAPI();
+        return;
+      }
+      this._player.loadVideoById(song.videoId);
+    },
+    stop() {
+      if (this._ready && this._player) try { this._player.stopVideo(); } catch {}
+    },
+    toggle() {
+      if (!this._ready || !this._player) return;
+      if (this._state === 1) this._player.pauseVideo(); else this._player.playVideo();
+    },
+    isPlaying() { return this._state === 1; },
+    currentTime() {
+      if (this._ready && this._player) try { return this._player.getCurrentTime() || 0; } catch {}
+      return 0;
+    },
+    seekTo(t) {
+      if (this._ready && this._player) try { this._player.seekTo(t, true); } catch {}
+    },
+
+    async search(query) {
+      const key = this.apiKey();
+      if (!key) return [];
+      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&maxResults=10&q=${encodeURIComponent(query)}&key=${encodeURIComponent(key)}`;
+      try {
+        const res = await fetch(url);
+        if (!res.ok) return [];
+        const data = await res.json();
+        return (data.items || []).map((item) => ({
+          source: 'youtube',
+          id: 'yt-' + item.id.videoId,
+          videoId: item.id.videoId,
+          title: item.snippet.title,
+          artist: item.snippet.channelTitle,
+          thumbnail: item.snippet.thumbnails.high ? item.snippet.thumbnails.high.url : '',
+          duration: 0,
+        }));
+      } catch { return []; }
+    },
+  };
+
+  // Initialise IFrame API as soon as a key is saved so first play is instant.
+  if (YT.apiKey()) YT.loadAPI();
+
   // ---------- Search ----------
   let searchTimer = null;
   document.getElementById('search-input').addEventListener('input', (e) => {
@@ -609,11 +738,12 @@
     const results = document.getElementById('search-results');
     if (!q) { results.innerHTML = ''; return; }
     searchTimer = setTimeout(async () => {
-      const data = await Api.call('search3', { query: q, artistCount: 8, albumCount: 8, songCount: 25 })
-        .catch(() => null);
-      if (!data) return;
-      const r = data.searchResult3 || {};
+      const [ndData, ytSongs] = await Promise.all([
+        Api.call('search3', { query: q, artistCount: 8, albumCount: 8, songCount: 25 }).catch(() => null),
+        YT.search(q),
+      ]);
       results.innerHTML = '';
+      const r = (ndData && ndData.searchResult3) || {};
       if ((r.artist || []).length) {
         results.appendChild(el('div', 'result-group-title', 'Artists'));
         r.artist.forEach((a) => results.appendChild(artistRow(a)));
@@ -628,6 +758,10 @@
       if ((r.song || []).length) {
         results.appendChild(el('div', 'result-group-title', 'Songs'));
         r.song.forEach((s, i) => results.appendChild(songRow(s, r.song, i)));
+      }
+      if (ytSongs.length) {
+        results.appendChild(el('div', 'result-group-title yt-title', 'YouTube'));
+        ytSongs.forEach((s, i) => results.appendChild(ytSongRow(s, ytSongs, i)));
       }
       if (!results.children.length) results.innerHTML = '<div class="empty-state">No results</div>';
     }, 320);
@@ -1050,6 +1184,26 @@
     navStatus.classList.toggle('connected', connected);
     disconnectBtn.hidden = !connected;
     syncConnectionChrome();
+    syncYTSettings();
+  }
+
+  function syncYTSettings() {
+    const key = YT.apiKey();
+    const ytStatus = document.getElementById('yt-status');
+    const ytClear = document.getElementById('yt-clear-btn');
+    const ytKeyInput = document.getElementById('yt-api-key');
+    if (key) {
+      ytStatus.textContent = 'API key saved — YouTube search enabled';
+      ytStatus.classList.add('connected');
+      ytClear.hidden = false;
+      ytKeyInput.value = '';
+      ytKeyInput.placeholder = '••••••••••••••';
+    } else {
+      ytStatus.textContent = 'No API key — search disabled';
+      ytStatus.classList.remove('connected');
+      ytClear.hidden = true;
+      ytKeyInput.placeholder = 'AIza…';
+    }
   }
 
   function openSettings() {
@@ -1131,6 +1285,23 @@
     setOfflineMode(false);
     Nav.tabTo('home');
     Views.showHome();
+  });
+
+  document.getElementById('yt-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const keyInput = document.getElementById('yt-api-key');
+    const err = document.getElementById('yt-error');
+    const key = keyInput.value.trim();
+    if (!key) { err.textContent = 'Paste your API key first.'; err.hidden = false; return; }
+    err.hidden = true;
+    YT.saveKey(key);
+    syncYTSettings();
+    YT.loadAPI();
+  });
+  document.getElementById('yt-clear-btn').addEventListener('click', () => {
+    YT.clearKey();
+    YT.stop();
+    syncYTSettings();
   });
 
   // If Navidrome credentials exist, reconnect when the network returns.
