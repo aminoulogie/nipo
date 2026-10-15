@@ -241,7 +241,7 @@ input::placeholder { color: var(--text-dim); }
 .views { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .view {
   padding: 0 18px;
-  padding-bottom: calc(var(--tabbar-h) + var(--miniplayer-h) + var(--safe-bottom) + 36px);
+  padding-bottom: calc(var(--tabbar-h) + var(--miniplayer-h) + var(--safe-bottom) + 48px);
 }
 
 /* ===================================================================
@@ -472,7 +472,7 @@ img.card-cover, img.detail-cover, img.np-cover, img.mini-cover {
   position: fixed;
   left: max(10px, calc(50% - 205px));
   right: max(10px, calc(50% - 205px));
-  bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 8px + 10px);
+  bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 10px);
   height: var(--miniplayer-h);
   border-radius: 999px;
   display: flex; align-items: center; gap: 12px;
@@ -509,70 +509,44 @@ img.card-cover, img.detail-cover, img.np-cover, img.mini-cover {
 }
 .mini-btn:active { transform: scale(0.86); background: rgba(255, 255, 255, 0.12); }
 
-/* Tab bar: a floating pill, not a full-width slab pinned to the edge. */
+/* Tab bar: full-width iOS-style bottom nav */
 .tabbar {
   position: fixed;
-  left: max(10px, calc(50% - 205px));
-  /* Leaves room for the round search button alongside. */
-  right: calc(max(10px, calc(50% - 205px)) + var(--tabbar-h) + 8px);
-  bottom: calc(8px + var(--safe-bottom));
-  height: var(--tabbar-h);
-  padding: 5px;
+  left: max(0px, calc(50% - 215px));
+  right: max(0px, calc(50% - 215px));
+  bottom: 0;
+  height: calc(var(--tabbar-h) + var(--safe-bottom));
+  padding: 0;
   display: flex;
-  align-items: stretch;
-  border-radius: 999px;
+  align-items: flex-start;
+  background: rgba(0, 0, 0, 0.88);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
   z-index: 10;
 }
-.tab-pill {
-  position: absolute;
-  top: 5px; bottom: 5px; left: 5px;
-  width: 0;
-  border-radius: 999px;
-  /* The active pill is its own small pane, with the same rim and specular
-     treatment as the bar it sits in. */
-  background: rgba(255, 255, 255, 0.14);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.26),
-    inset 0 1.5px 1px -1px rgba(255, 255, 255, 0.55);
-  pointer-events: none;
-  z-index: 0;
-}
+.tab-pill { display: none; }
 .tab-btn {
   flex: 1;
   position: relative;
   z-index: 1;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 3px;
-  font-size: 11px; font-weight: 600; letter-spacing: 0;
-  color: #fff;
-  padding: 0; border-radius: 999px;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.2px;
+  color: rgba(255, 255, 255, 0.45);
+  padding: 8px 0 0; height: var(--tabbar-h);
   transition: color 0.22s;
 }
 .tab-btn.active { color: var(--accent); }
-.tab-icon { font-size: 25px; }
-/* Press feedback: the glyph swells and springs back. */
-.tab-btn .tab-icon,
-.search-fab .tab-icon {
+.tab-icon { font-size: 24px; }
+/* Press feedback */
+.tab-btn .tab-icon {
   transition: transform 0.34s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.tab-btn:active .tab-icon,
-.search-fab:active .tab-icon { transform: scale(1.22); }
+.tab-btn:active .tab-icon { transform: scale(1.18); }
 
-/* Search sits outside the bar as its own round button. */
-.search-fab {
-  position: fixed;
-  right: max(10px, calc(50% - 205px));
-  bottom: calc(8px + var(--safe-bottom));
-  width: var(--tabbar-h);
-  height: var(--tabbar-h);
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  color: #fff;
-  z-index: 10;
-  transition: color 0.22s, transform 0.18s cubic-bezier(0.32, 0.72, 0, 1);
-}
-.search-fab.active { color: var(--accent); }
-.search-fab:active { transform: scale(0.92); }
+/* Search FAB hidden — search is now a tab */
+.search-fab { display: none; }
 
 /* ===================================================================
    NOW PLAYING
@@ -581,10 +555,7 @@ img.card-cover, img.detail-cover, img.np-cover, img.mini-cover {
    =================================================================== */
 .now-playing {
   position: fixed; inset: 0; z-index: 50;
-  /* Tint sits over near-black so light artwork cannot wash the text out. */
-  background:
-    radial-gradient(140% 100% at 50% -10%, var(--np-tint-hi), transparent 62%),
-    linear-gradient(180deg, var(--np-tint) 0%, #0a0a0c 78%);
+  background: #000;
   display: flex; flex-direction: column; align-items: center;
   padding: calc(8px + var(--safe-top)) 24px calc(12px + var(--safe-bottom));
   transform: translateY(100%);
@@ -970,100 +941,128 @@ img.card-cover, img.detail-cover, img.np-cover, img.mini-cover {
 }
 
 
-/* ===== Settings ===== */
-.settings-sheet {
-  position: fixed;
-  left: 50%;
-  bottom: 0;
-  width: min(100%, 430px);
-  max-height: calc(100dvh - var(--safe-top) - 18px);
-  z-index: 80;
-  transform: translate(-50%, 105%);
-  transition: transform .42s var(--ease-spring);
-  padding: 8px 20px calc(24px + var(--safe-bottom));
-  border-radius: 24px 24px 0 0;
-  overflow-y: auto;
-  background: rgba(24, 24, 27, .96);
-}
-.settings-sheet.open { transform: translate(-50%, 0); }
-.settings-sheet .sheet-handle { margin: 2px auto 14px; }
-.settings-head {
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 22px;
-}
-.settings-head h3 {
-  margin: 0;
-  font-size: 28px;
-  letter-spacing: -.02em;
-}
-.settings-head p {
-  margin: 5px 0 0;
-  color: rgba(255,255,255,.52);
-  font-size: 14px;
-  line-height: 1.35;
-}
-.settings-section {
-  padding: 16px;
-  border-radius: 18px;
-  background: rgba(255,255,255,.055);
-}
-.settings-section-title {
-  font-size: 17px;
+/* ===== Settings tab view ===== */
+.page-heading {
+  font-size: 34px;
   font-weight: 700;
-  margin-bottom: 3px;
+  letter-spacing: -0.022em;
+  line-height: 1.1;
+  padding: calc(12px + var(--safe-top)) 0 18px;
+}
+.page-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(12px + var(--safe-top)) 0 18px;
+}
+.page-heading-row .page-heading {
+  padding: 0;
+}
+.settings-view .page-heading {
+  padding-bottom: 10px;
+}
+.settings-group-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.45);
+  text-transform: uppercase;
+  margin: 24px 0 6px 4px;
+}
+.settings-group-label:first-of-type { margin-top: 8px; }
+.settings-group {
+  background: var(--surface);
+  border-radius: 14px;
+  overflow: hidden;
+  padding: 0 16px 16px;
+}
+.settings-row {
+  padding: 12px 0;
+  position: relative;
+}
+.settings-row + .settings-row::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
 }
 .settings-status {
   font-size: 13px;
-  color: rgba(255,255,255,.48);
-  margin-bottom: 16px;
+  color: rgba(255, 255, 255, 0.48);
+  padding: 12px 0 4px;
 }
 .settings-status.connected { color: #68d391; }
 .settings-form {
   display: grid;
-  gap: 13px;
+  gap: 10px;
 }
 .settings-form label {
   display: grid;
-  gap: 7px;
+  gap: 6px;
 }
 .settings-form label span {
-  color: rgba(255,255,255,.58);
+  color: rgba(255, 255, 255, 0.55);
   font-size: 13px;
   font-weight: 600;
 }
 .settings-form input {
   width: 100%;
-  min-height: 48px;
-  border: 1px solid rgba(255,255,255,.08);
-  border-radius: 13px;
-  background: rgba(255,255,255,.08);
+  min-height: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
   color: #fff;
   padding: 0 13px;
   font: inherit;
   outline: none;
 }
 .settings-form input:focus {
-  border-color: rgba(255,255,255,.22);
-  background: rgba(255,255,255,.11);
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.1);
 }
 .settings-connect {
   width: 100%;
-  min-height: 48px;
-  margin-top: 3px;
+  min-height: 44px;
+  margin-top: 4px;
 }
 .settings-danger {
   width: 100%;
   min-height: 44px;
-  margin-top: 12px;
+  margin-top: 10px;
   border: 0;
-  border-radius: 12px;
-  background: rgba(255,69,58,.12);
+  border-radius: 10px;
+  background: rgba(255, 69, 58, 0.12);
   color: #ff6961;
   font: inherit;
   font-weight: 650;
+}
+/* Home hero banner */
+.home-hero {
+  width: calc(100% + 36px);
+  margin: 0 -18px 24px;
+  height: 200px;
+  border-radius: 0;
+  background: var(--surface);
+  overflow: hidden;
+  position: relative;
+}
+.home-hero img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+.home-hero-info {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 40px 18px 14px;
+  background: linear-gradient(transparent, rgba(0,0,0,0.7));
+}
+.home-hero-title {
+  font-size: 18px; font-weight: 700; letter-spacing: -0.3px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.home-hero-sub {
+  font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 2px;
 }
 .local-home {
   padding: 28px 4px 8px;

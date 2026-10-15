@@ -768,10 +768,10 @@
   });
 
   // ---------- Navigation ----------
-  const TITLES = { home: 'Home', search: 'Search', library: 'Library' };
+  const TITLES = { home: 'Home', search: 'Search', library: 'Library', settings: 'Settings' };
   const Nav = {
     stack: ['home'],
-    setTitle(t) { document.getElementById('topbar-title').textContent = t; },
+    setTitle(t) { /* page headings are static in the HTML */ },
     showView(name) {
       document.querySelectorAll('.view').forEach((v) => (v.hidden = true));
       document.getElementById('view-' + name).hidden = false;
@@ -794,6 +794,7 @@
       document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.view === name));
       this.setTitle(TITLES[name]);
       if (name === 'library') Views.showLibrary(currentLibTab());
+      if (name === 'settings') syncSettings();
     },
   };
   function currentLibTab() {
@@ -1162,10 +1163,6 @@
     Views.showLibrary(name);
   }
 
-  const settingsSheet = document.getElementById('settings-sheet');
-  const settingsOverlay = document.getElementById('sheet-overlay');
-  const settingsBtn = document.getElementById('settings-btn');
-  const settingsClose = document.getElementById('settings-close');
   const disconnectBtn = document.getElementById('navidrome-disconnect');
   const navStatus = document.getElementById('navidrome-status');
   const serverInput = document.getElementById('login-server');
@@ -1206,34 +1203,6 @@
     }
   }
 
-  function openSettings() {
-    syncSettings();
-    loginError.hidden = true;
-    settingsOverlay.hidden = false;
-    settingsSheet.hidden = false;
-    requestAnimationFrame(() => {
-      settingsOverlay.classList.add('open');
-      settingsSheet.classList.add('open');
-    });
-  }
-
-  function closeSettings() {
-    settingsSheet.classList.remove('open');
-    settingsOverlay.classList.remove('open');
-    setTimeout(() => {
-      settingsSheet.hidden = true;
-      if (!document.querySelector('.action-sheet.open, .create-sheet.open')) {
-        settingsOverlay.hidden = true;
-      }
-    }, 420);
-  }
-
-  settingsBtn.addEventListener('click', openSettings);
-  settingsClose.addEventListener('click', closeSettings);
-  settingsOverlay.addEventListener('click', () => {
-    if (!settingsSheet.hidden) closeSettings();
-  });
-
   document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -1264,7 +1233,6 @@
       await Api.call('ping');
       Api.save();
       syncSettings();
-      closeSettings();
       setOfflineMode(false);
       Nav.tabTo('home');
       await Views.showHome();
@@ -1281,7 +1249,6 @@
   disconnectBtn.addEventListener('click', () => {
     Api.clear();
     syncSettings();
-    closeSettings();
     setOfflineMode(false);
     Nav.tabTo('home');
     Views.showHome();
